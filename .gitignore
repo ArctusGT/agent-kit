@@ -1,0 +1,7 @@
+# Per-machine permission grants belong to whoever is working, never shared.
+.claude/settings.local.json
+
+# Editor and OS scratch
+*.swp
+*~
+.DS_Store

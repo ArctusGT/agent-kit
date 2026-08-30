@@ -1,0 +1,6 @@
+@.agents/AGENTS.md
+
+# <project>
+
+Project-specific instructions go below the import. The line above pulls in the
+shared preferences; anything here overrides or extends them for this repo only.
