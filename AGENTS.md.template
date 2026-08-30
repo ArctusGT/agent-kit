@@ -2,5 +2,14 @@
 
 # <project>
 
-Project-specific instructions go below the import. The line above pulls in the
-shared preferences; anything here overrides or extends them for this repo only.
+Most rules under `.claude/rules/` and every skill under `.claude/skills/` are
+symlinks into `.agents/`, the shared kit. Editing one edits the kit and changes
+every project that links it. To change a rule for this repo only, replace the
+symlink with a real file.
+
+Neither `find` nor `grep -r` descends into them. Both report only the few real
+files and no error, so a search reads as a clean answer when it has seen almost
+nothing. Use `find -L` and `grep -R`.
+
+Project-specific, and safe to edit in place: <list this project's real files
+here, so an agent knows which ones it can change without affecting the kit>.
