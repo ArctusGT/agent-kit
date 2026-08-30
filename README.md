@@ -13,7 +13,8 @@ account.
     .agents/bin/link.sh --list
     .agents/bin/link.sh --all
     cp .agents/AGENTS.md.template AGENTS.md
-    git add .gitmodules .agents AGENTS.md .claude docs/agents
+    ln -s AGENTS.md CLAUDE.md
+    git add .gitmodules .agents AGENTS.md CLAUDE.md .claude docs/agents
 
 `--list` prints every entry and whether the project has it. `--all` links the
 generic rules, all skills, all commands and the issue-tracker docs; the Ansible
@@ -76,9 +77,11 @@ project-specific skill nowhere to live.
 Claude Code discovers skills, commands and rules under `.claude/` only. `.agents/`
 is where the files live; `.claude/` is how the agent finds them.
 
-`AGENTS.md` is a real file rather than a symlink because every project extends
-it, and because `@` import is native — no symlink to break on a checkout that
-does not support them.
+`AGENTS.md` at the project root is a real file, because every project extends
+it. `CLAUDE.md` beside it is a symlink to it, because Claude Code reads
+`CLAUDE.md` and does not read `AGENTS.md` — measured on 2.1.238, where a root
+`AGENTS.md` alone loaded nothing at all. The `@` import inside it is followed,
+so the kit's preferences arrive through the symlink.
 
 ## The files
 
@@ -98,10 +101,14 @@ column is per-tracker. Replace the symlink with a real file to change it.
 
 ## When something does not load
 
-Two files are named `AGENTS.md`: the project's at the root, and the kit's at
-`.agents/AGENTS.md`. The root one imports the kit one. Confirm the import took
-by asking a fresh agent to quote a line from the shared preferences — a failed
-import loads nothing and says nothing.
+Three files are in play: the project's root `AGENTS.md`, the `CLAUDE.md` symlink
+beside it, and the kit's `.agents/AGENTS.md` that the first one imports. Nothing
+loads if the `CLAUDE.md` symlink is missing, and it fails silently.
+
+Check it from the project root. A run that answers with the two Golden rules
+bullets has the whole chain working:
+
+    claude -p "Quote the two bullets under 'Golden rules' from your loaded instructions."
 
 An agent that ignores a rule or cannot see a skill is almost always a dangling
 symlink — the submodule is not checked out. `.agents/bin/link.sh --list` and
