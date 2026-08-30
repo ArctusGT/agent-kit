@@ -34,6 +34,45 @@ On an existing clone:
 
     git submodule update --init .agents
 
+## Where port 22 is blocked
+
+Both `git@github.com:` forms above need outbound SSH on port 22, which campus
+egress drops. GitHub answers on 443 as well. Either form below reaches it.
+
+Inline, needing no configuration, which is why a machine that cannot be
+configured uses it:
+
+    git clone ssh://git@ssh.github.com:443/OWNER/REPO.git
+
+The `ssh://` scheme is required. `git@ssh.github.com:443/OWNER/REPO.git` looks
+equivalent and is not: in that form a colon starts a path, so `443/OWNER/REPO`
+is read as a directory name.
+
+A `~/.ssh/config` alias instead, which sets the port and key once and keeps
+every remote short:
+
+    Host github-<name>
+        HostName ssh.github.com
+        Port 443
+        User git
+        IdentityFile ~/.ssh/github-<name>
+        IdentitiesOnly yes
+
+Then `github-<name>:OWNER/REPO.git` is the whole URL, wherever one of the
+commands above says `git@github.com:OWNER/REPO.git`.
+
+`IdentitiesOnly yes` earns its place as soon as a second GitHub key exists.
+Without it ssh offers every key the agent holds, in the agent's order, and
+GitHub authenticates as whichever it recognises first — so a push can land as
+the wrong identity and succeed.
+
+Check a key before wiring anything to it:
+
+    ssh -T -p 443 git@ssh.github.com
+
+`Hi USERNAME!` is an account key and reaches every repository that account can
+read. `Hi OWNER/REPO!` is a deploy key and reaches exactly one.
+
 ## Pulling kit changes into a project
 
     git submodule update --remote .agents
