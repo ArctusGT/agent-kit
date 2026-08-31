@@ -23,7 +23,7 @@ the construct that needs no escape rather than escaping harder.
 
 It fails **silently and inverted**. The expression evaluates, produces an empty
 list or an unsplit string, and the surrounding logic then reports a confident
-wrong answer — a healthy fleet described as broken, or a filter that quietly
+wrong answer: a healthy fleet described as broken, or a filter that quietly
 filters nothing. A regex that substitutes nothing leaves the placeholder it was
 meant to replace, and the query built from it runs against a literal.
 
@@ -32,6 +32,6 @@ meant to replace, and the query built from it runs against a literal.
 **Evaluate the expression against real input before trusting it**, on localhost
 with the actual captured output.
 
-Reading the code does not catch this — reading it is exactly what makes it look
+Reading the code does not catch this; reading it is exactly what makes it look
 correct. Only running it against real input distinguishes a pattern that matches
 from one that compiles.

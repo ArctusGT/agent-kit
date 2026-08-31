@@ -6,11 +6,11 @@ explanation after, and never the complete story.**
 ## The order
 
 1. **Who the document is for.** One or two sentences.
-2. **The exact commands, end to end** — from logging in to reading the result.
+2. **The exact commands, end to end**, from logging in to reading the result.
    Nothing between them the reader does not type.
 3. **The explainers**, below the commands, and only for what the commands did
    not make obvious.
-4. **How each file in the directory is used** — parameters, common errors, and
+4. **How each file in the directory is used**: parameters, common errors, and
    troubleshooting an agent or a search would not reach.
 
 **Never open with principles the reader has not arrived at yet.** The Agent
@@ -19,7 +19,7 @@ thing it explains is read by nobody.
 
 ## What to leave out
 
-**If an agent holding this file, or a search, answers it easily — leave it out.**
+**If an agent holding this file, or a search, answers it easily, leave it out.**
 
 A gloss on a command runs two words to one short sentence, and only where the
 command is not self-evident. Anything longer is an explainer and belongs below.

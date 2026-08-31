@@ -12,12 +12,12 @@ Two forms, and no third:
 
 The banner text is `ansible_managed`, set once in `ansible.cfg`. Templates
 render it with `{{ ansible_managed | comment }}` at both ends, so the wording is
-single-sourced and cannot drift between files. Keep it static — a banner
+single-sourced and cannot drift between files. Keep it static; a banner
 carrying a timestamp or a run id churns every managed file on every converge.
 
 ## Where the reasoning goes instead
 
-`{# ... #}` — a Jinja comment is stripped at render, so it stays in the
+`{# ... #}`. A Jinja comment is stripped at render, so it stays in the
 template and never reaches the host. Converting a `#` line to `{# #}` loses
 nothing and is the fix for almost every existing case.
 
@@ -37,7 +37,7 @@ itself.
 
 A comment written onto a host is a copy of repository knowledge that nothing
 regenerates, nothing checks, and no audit can see. It rots in place, and it
-rots on hardware rather than in git — so the usual recovery, reading the
+rots on hardware rather than in git, so the usual recovery, reading the
 history, does not reach it.
 
 The trap is that the instinct is usually right and the medium is wrong: a

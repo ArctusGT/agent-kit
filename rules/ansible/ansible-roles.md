@@ -5,7 +5,7 @@ reference that needs it, and removed in the same commit as the last reference
 that did.**
 
 A reference means one of: an entry in a `*_roles` list, a play's `roles:`
-block, or an `include_role`/`import_role` name. Nothing else counts — a role
+block, or an `include_role`/`import_role` name. Nothing else counts; a role
 named only in a comment, a doc, or a plan is unreferenced.
 
 ## Never
@@ -18,7 +18,7 @@ named only in a comment, a doc, or a plan is unreferenced.
 
 ## Removing one
 
-The removal commit is the whole record — git is the provenance, so write it as
+The removal commit is the whole record, because git is the provenance, so write it as
 one. It must carry:
 
 - what the role deployed, and to which hosts
@@ -32,11 +32,11 @@ in the repository knows what it put on a host.
 ## Finding one
 
 Reconcile supply against demand: list the role directories, list the
-references, and diff them. An orphan is not discoverable by reading the role —
-it is obvious the moment the two lists are compared.
+references, and diff them. An orphan is not discoverable by reading the role.
+It is obvious the moment the two lists are compared.
 
 ## Why this needs a rule
 
 An unreferenced role is not inert. It keeps making claims that nothing
 re-checks, and any ledger of what is deployed records them as though they were
-still true — including claims about hosts the role has not run on for weeks.
+still true, including claims about hosts the role has not run on for weeks.

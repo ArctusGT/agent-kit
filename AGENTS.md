@@ -41,12 +41,12 @@ then drifts from what the running thing makes obvious.
 Vendor docs, man pages and a repo's own prose are hypotheses about the system.
 Where they disagree with a measurement, the measurement wins and the doc is stale.
 
-- Read the value, the label name, the port, the flag — do not recall it. A
+- Read the value, the label name, the port, the flag. Do not recall it. A
   plausible name that does not exist fails silently far more often than it fails
   loudly.
 - When a check is cheap and a wrong guess costs a run, measure first. When a wrong
   guess would be **invisible**, measure always.
-- **Before adding anything fleet-wide, enumerate what it collides with** — ports,
+- **Before adding anything fleet-wide, enumerate what it collides with**: ports,
   users, paths, ordering. A new agent inherits every constraint the fleet already
   has.
 - State the evidence beside the claim. "X is true" and "X is true, measured as N"
@@ -102,6 +102,7 @@ Trivial work may be done directly:
   - Often means small, not unilateral. The Maintainer stages what they accept
     and the Agent commits that; see `.claude/rules/the-index-is-the-maintainers.md`.
 
+
 ### comments
 - Keep comments short, never bigger than the code it is supporting.
 - Use comments for WHY, not WHAT. Code should be self-documenting. Comments should explain business logic or non-obvious decisions.
@@ -113,13 +114,13 @@ Trivial work may be done directly:
 
 ### commands
 
-- Agent states **which host** a command runs on before the block — the
+- Agent states **which host** a command runs on before the block: the
 workstation, a named server, a container, a CI runner. A command with no
 host named is incomplete.
 - Multiple lines in one block are fine, and preferred over several blocks where
 the steps belong together. One line per step, in order.
 - **No `&&` chains.** The only exception is a pipe that genuinely feeds one
-command's output into the next — and a pipe MUST be explained in full before
+command's output into the next, and a pipe MUST be explained in full before
 the block: what each stage consumes, what it emits, and what the final output
 should look like.
 - Agent says in one line what the block does before showing it, and what output
@@ -128,7 +129,7 @@ to expect after it.
 #### Scripts are files, never inline
 
 **Agent never runs a multi-line script inline.** No heredocs, no `python3 -c`,
-no `bash -c` carrying embedded newlines — not when handing a command to Maintainer,
+no `bash -c` carrying embedded newlines, not when handing a command to Maintainer,
 and not when running one itself.
 
 Write the script to the scratchpad directory, then run the file. Two commands,
@@ -138,7 +139,7 @@ both short enough to read:
 python3 <scratchpad>/check-foo.py
 
 This is not a formatting preference. An inline script is unreadable in the
-transcript, unreviewable before it runs, and gone afterwards — so a mistake in
+transcript, unreviewable before it runs, and gone afterwards, so a mistake in
 it cannot be found, corrected or repeated. As a file it can be read before it
 runs, edited when it is wrong, and re-run to reproduce a result.
 
@@ -159,5 +160,5 @@ The five canonical triage roles, used as-is. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context — one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 

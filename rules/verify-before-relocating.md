@@ -4,7 +4,7 @@
 first.**
 
 Relocating existing text into a README, a rule or an issue feels like a formatting
-change. It is not — it re-asserts every statement in it, in a place with more
+change. It is not. It re-asserts every statement in it, in a place with more
 authority than the comment had, and usually further from the code that would
 contradict it.
 

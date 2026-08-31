@@ -14,5 +14,5 @@ and no template variables.
 ## Why this needs a rule
 
 It fails late. Everything upstream converges, then the play dies on the file
-write — so the feedback arrives after a long successful run and reads like a
+write, so the feedback arrives after a long successful run and reads like a
 variable-scoping problem rather than a module choice.
