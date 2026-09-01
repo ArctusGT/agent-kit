@@ -81,6 +81,10 @@ read. `Hi OWNER/REPO!` is a deploy key and reaches exactly one.
 `--list` after the update shows anything new the kit gained. Nothing links
 itself; a new skill reaches the project only when named.
 
+A skill is live as soon as it is linked. Claude Code picks it up through the
+symlink without restarting the session, so there is nothing to reload after
+`link.sh`.
+
 ## Pushing a kit change from inside a project
 
 Edits made in `.agents/` are edits to this repository.
