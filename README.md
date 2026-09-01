@@ -28,11 +28,16 @@ is this project's.
 ## Cloning a project that already uses it
 
     git clone --recurse-submodules git@github.com:<you>/<project>.git
+    git -C .agents checkout main
 
 Without `--recurse-submodules` the symlinks dangle and no rule or skill loads.
+A clone leaves the submodule on no branch, so `checkout main` is what makes a
+later kit change pushable from here.
+
 On an existing clone:
 
     git submodule update --init .agents
+    git -C .agents checkout main
 
 ## Where port 22 is blocked
 
@@ -75,11 +80,17 @@ read. `Hi OWNER/REPO!` is a deploy key and reaches exactly one.
 
 ## Pulling kit changes into a project
 
-    git submodule update --remote .agents
+    git -C .agents fetch origin
+    git -C .agents merge --ff-only origin/main
     .agents/bin/link.sh --list
 
 `--list` after the update shows anything new the kit gained. Nothing links
 itself; a new skill reaches the project only when named.
+
+`git submodule update --remote` fetches the same commits but leaves the
+submodule on no branch, and a commit made there afterwards lands on nothing.
+The two commands above keep it on `main`, so pushing a kit change from this
+project works with no cleanup step.
 
 A skill is live as soon as it is linked. Claude Code picks it up through the
 symlink without restarting the session, so there is nothing to reload after
@@ -97,7 +108,7 @@ Edits made in `.agents/` are edits to this repository.
     git add .agents
 
 The last line records the new kit commit in the project. Other projects pick it
-up with `git submodule update --remote`.
+up by pulling, above.
 
 ## Shared or project-specific
 
