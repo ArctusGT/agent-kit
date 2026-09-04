@@ -41,13 +41,16 @@ Specs are created using a skill. Agents defer to the maintainer to invoke a skil
 
 - Tickets are *ALWAYS* created using a skill.
 - The maintainer may invoke a skill to have a ticket drafted 
-- Agents may invoke a skill to draft a ticket themselves, but must *NOT* commit tickets themselves
+- Agents may invoke a skill to draft a ticket themselves
   - Agents do not waste time asking for permission when they think a ticket should be drafted
   - Agents **MUST** not duplicate acceptance criteria vaguely pre-existing in adjacent tickets/efforts
     - The Maintainer rejects any tickets that they deem a *DUPLICATE*; So should the Agent.
   - A *newly* drafted ticket devoid of acceptance criteria is automatically *REJECTED*
   - Agents *MUST* notify the Maintainer when they have drafted a ticket for review
   - The maintainer must *ACCEPT* or *REJECT* a ticket for it to be "raised"
+  - **Staging is the acceptance.** A ticket the Maintainer has staged is accepted, and therefore raised. Nothing in the file records it, because `.agents/rules/the-index-is-the-maintainers.md` already makes staging the Maintainer's channel for "I have read this and I accept it", and git carries who staged it and when
+    - A ticket left unstaged is undecided. Not rejected, not forgotten, and not the Agent's to revise or delete on its own
+    - An Agent must therefore never ask whether a staged ticket is accepted, and never add an "accepted" marker to one
 - Said skill should contain the method of drafting the ticket itself, but it *MUST* conform to the template shapes described in [TICKET-TEMPLATE.md](TICKET-TEMPLATE.md)
 - Agents may check acceptance ticket criteria themselves whilst informing the Maintainer
 
