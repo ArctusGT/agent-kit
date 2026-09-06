@@ -43,3 +43,6 @@ history, does not reach it.
 The trap is that the instinct is usually right and the medium is wrong: a
 comment written onto a host **to correct a misleading comment** reproduces the
 defect one layer down.
+
+`../comments-do-not-carry-the-design.md` is the same rule for a file that stays
+in the repository, where git history at least reaches the copy.

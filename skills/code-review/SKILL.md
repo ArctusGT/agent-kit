@@ -50,10 +50,12 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Repeated Switches**: the same `switch`/`if`-cascade on the same type recurs across the change. → replace with polymorphism, or one map both sites share.
 - **Shotgun Surgery**: one logical change forces scattered edits across many files in the diff. → gather what changes together into one module.
 - **Divergent Change**: one file or module is edited for several unrelated reasons. → split so each module changes for one reason.
+- **Lazy Element**: a function, class, or file not doing enough to pay for its own name — classically one with a single caller, or a body no longer than its signature. → inline it into the caller. Keep it only where inlining genuinely costs the caller's readability, and note that a lazy element defined far from its one caller is the worse case, not the milder one.
 - **Speculative Generality**: abstraction, parameters, or hooks added for needs the spec doesn't have. → delete it; inline back until a real need shows.
 - **Message Chains**: long `a.b().c().d()` navigation the caller shouldn't depend on. → hide the walk behind one method on the first object.
 - **Middle Man**: a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest**: a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
+- **Comments**: prose standing in for what the code should say — or, worse, asserting something the code does not enforce: what the system guarantees, what another component does, what the work is trying to prove. A spec's hypothesis restated as an invariant in a file header is this smell, and so is the same assertion appearing in several headers. → make the code say it (extract, rename, assert). A design claim belongs in the spec or ticket that owns it, once; a measurement belongs in the build record, dated. **Test: can the comment be falsified by an edit in a different file? Then it is a claim, not an explanation.**
 
 ### 4. Spawn both sub-agents in parallel
 

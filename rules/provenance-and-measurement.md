@@ -10,8 +10,6 @@ from the shared role"*, not *"moved here 2026-08-31"*.
 **A measurement is what the running system, a host, or a third-party binary was
 observed to do.** Git cannot hold it, and undated nobody can tell a stale
 measurement from a fresh one, so it carries its date and how it was taken.
-`no-hand-maintained-capacity.md` requires exactly this of a dated test
-expectation, and this rule does not relax it.
 
 > **The test: can git answer it without being told what to look for?** Then the
 > date is noise.
