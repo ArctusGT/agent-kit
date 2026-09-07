@@ -39,20 +39,16 @@ Specs are created using a skill. Agents defer to the maintainer to invoke a skil
 
 ## Creating tickets
 
-- Tickets are *ALWAYS* created using a skill.
-- The maintainer may invoke a skill to have a ticket drafted 
-- Agents may invoke a skill to draft a ticket themselves
+- Maintainer or Agents may draft tickets but must always do so using a skill.
   - Agents do not waste time asking for permission when they think a ticket should be drafted
-  - Agents **MUST** not duplicate acceptance criteria vaguely pre-existing in adjacent tickets/efforts
-    - The Maintainer rejects any tickets that they deem a *DUPLICATE*; So should the Agent.
-  - A *newly* drafted ticket devoid of acceptance criteria is automatically *REJECTED*
-  - Agents *MUST* notify the Maintainer when they have drafted a ticket for review
-  - The maintainer must *ACCEPT* or *REJECT* a ticket for it to be "raised"
-  - **Staging is the acceptance.** A ticket the Maintainer has staged is accepted, and therefore raised. Git carries who staged it and when.
+  - Tickets **MUST** not duplicate acceptance criteria vaguely pre-existing in adjacent tickets/efforts
+    - Pre-existing tickets may be enhanced, merged or contributed to after their initial creation with new requirements.
+  - Only the maintainer stages a drafted ticket.
+    - A ticket the Maintainer has staged is accepted, and therefore raised. Git carries who staged it and when.
     - A ticket left unstaged is undecided. Not rejected, not forgotten, and not the Agent's to revise or delete on its own
-    - An Agent must therefore never ask whether a staged ticket is accepted, and never add an "accepted" marker to one
 - Said skill should contain the method of drafting the ticket itself, but it *MUST* conform to the template shapes described in [TICKET-TEMPLATE.md](TICKET-TEMPLATE.md)
-- Agents may check acceptance ticket criteria themselves whilst informing the Maintainer
+- Agents may mark acceptance criteria as "done" themselves whilst informing the Maintainer
+  - Agents may question the Maintainer if it believes acceptance criteria is unfulfilled or accidentally marked "done".
 
 ## Staying on track
 
@@ -64,8 +60,8 @@ Closed tickets are retained only in git. The code base is representative of work
 
 - Agents *MUST NOT* close tickets themselves
 - Agents *MAY* set a ticket's Status to `ready-for-closure` once every acceptance criterion it can confirm is confirmed
-  - This asks for review; it does not close anything. `ready-for-closure` means the Maintainer needs to review for closure
-  - The agent says in a comment which criteria are unticked and why, so a criterion left unmet is distinguishable from one the hardware or the scope made moot
+  - This asks for review; it does not close anything. `ready-for-closure` means the Maintainer needs to review for closure.
+  - Agents should remind the maintainer when tickets are `ready-for-closure`.
   - The Maintainer greps for the term to find tickets awaiting review, so an agent that finishes the work and leaves the Status alone hides it
 - The maintainer may instruct an agent to close a ticket using `ready-for-closure` if it's acceptance criteria is confirmed to be completed
   - An agent should ensure work is committed before it delete the ticket file, and then commits

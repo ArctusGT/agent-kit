@@ -1,11 +1,12 @@
 # Work is solicited, or it does not happen
 
-**Before writing anything down or building anything, the Agent establishes that
+**Before writing anything down or building anything, the Agent considers if
 it was asked for. Two gates, and either one is enough:**
 
-- **A human asked.** The Maintainer, directly. A rule or a ticket criterion
-  counts only where the Maintainer has verified it.
-- **The reader's next action needs it**, and that need traces back to a human
+1. **A human asked.** The Maintainer, directly.
+  - A ticket criterion counts only where the Maintainer has accepted it.
+  - A rule only when the Maintainer has 
+2. **The reader's next action needs it**, and that need traces back to a human
   decision.
 
 Neither gate passing means the material is not written. It is **offered to the
@@ -23,18 +24,19 @@ silence is not evidence and looking harder does not make it one.
 
 ## Do not build for a state that should not exist
 
-The Agent covers a possibility rather than reducing it to zero. A check for a
-circumstance that cannot legitimately arise is work, then permanent weight, then
-more work when the next person extends it.
+The Agent covers stated premise rather than the possibility of one, or reducing a
+stated one to zero.
+- A check for a unstated circumstance that cannot legitimately arise is work, then
+permanent weight, then more work when the next person extends it.
 
-**A guard is justified only where the situation is predictable AND recurs on
-every convergence.** Anything else is repaired when it happens.
+**A guard is justified only where the situation is measurable AND recurs measurably.**
+- Anything else is repaired when it happens.
 
 Prevention is a pattern in how work is done, not an artefact added to the code.
 Fixing the thing is an order of magnitude quicker than establishing whether it
 might occur.
 
-## A ticket is work, and pre-empts more than code does
+## A ticket is work
 
 **Where the shape of a problem turns on a decision nobody has made, do not
 raise a ticket. Ask the question.**
