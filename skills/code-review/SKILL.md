@@ -55,7 +55,7 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Message Chains**: long `a.b().c().d()` navigation the caller shouldn't depend on. → hide the walk behind one method on the first object.
 - **Middle Man**: a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest**: a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
-- **Claim Comments**: prose standing in for what the code should say — or, worse, asserting something the code does not itself state: what it produces, what a dependency injects. A constraint measured, obstacle overcome, or design claim restated in a file header or comment is this smell → make the code say it (extract, rename, assert). What cannot be discerned/measured directly, belongs in a location that owns it -> for a reader who will conceivably lose time without it; a Readme, a Git log.
+- **Claim Comments**: prose standing in for what the code should say — or, worse, asserting something the code does not itself state: what it produces, what a dependency injects. A constraint measured, obstacle overcome, or design claim restated in a file header or comment is this smell → make the code say it (extract, rename, assert). What cannot be discerned/measured directly, belongs in a location that owns it -> genuine traps a reader would conceivably lose time without; a Readme, a Git log.
 
 ### 4. Spawn both sub-agents in parallel
 
