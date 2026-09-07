@@ -10,7 +10,7 @@ Each of those has a home that can be checked, and a comment is not one:
 |---|---|
 | what the system guarantees | the spec or ticket that claims it, once |
 | what the work is trying to prove | that ticket's criteria |
-| what was observed to happen | the build record, carrying its date |
+| what was observed to happen | with its subject, saying how it was taken |
 | what another component does | nowhere: it is falsified by an edit its reader never sees |
 
 > **The test: can this comment be made false by an edit in a different file?**
@@ -42,8 +42,9 @@ the design is for.
   the sentence doesn't, so the sentence becomes the constraint.
 - **The same assertion in more than one file.** Correct it where it is owned,
   and delete the copies.
-- **A measurement in a comment.** `provenance-and-measurement.md` puts it in the
-  build record with its date and how it was taken.
+- **A measurement in a comment.** `a-measurement-belongs-with-its-subject.md`
+  puts it where the thing that produced it lives, and never in a document that
+  collects measurements.
 - **A comment written to correct a misleading comment.** Delete the wrong one.
 
 `ansible/deployed-file-comments.md` is this rule for a file written onto a host,
