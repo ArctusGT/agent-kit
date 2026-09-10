@@ -156,8 +156,9 @@ runs, edited when it is wrong, and re-run to reproduce a result.
 
 A script that walks the tree or rewrites more than one file states its scope
 and its exclusions in the file, before it runs. Anything committed to the repo
-goes in `scripts/` and explains itself in comments; anything one-off stays in
-the scratchpad.
+goes in `scripts/` and answers `--help`; anything one-off stays in the
+scratchpad. `.claude/rules/scripts-shape.md` is what that report holds, and how
+to print it without writing a second copy.
 
 ## Agent skills
 
