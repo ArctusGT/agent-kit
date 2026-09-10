@@ -19,6 +19,11 @@ case "$KIT" in
 esac
 
 # name -> "<path under the kit>|<path under the project>"
+#
+# Two things the table below decides rather than records. Generic and ansible
+# rules both land in one flat .claude/rules/, so an ansible rule must not take
+# a generic rule's name. And docs/agents lands outside .claude/ because the
+# skills that read those files look for them at that project path.
 locate() {
   local n=$1
   for p in "rules/$n.md|.claude/rules/$n.md" \

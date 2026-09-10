@@ -137,18 +137,18 @@ it. `CLAUDE.md` beside it is a symlink to it, because Claude Code reads
 `AGENTS.md` alone loaded nothing at all. The `@` import inside it is followed,
 so the kit's preferences arrive through the symlink.
 
-## The files
+## Two files the linker will not touch
 
-| path | what it is |
-|---|---|
-| `AGENTS.md` | The Maintainer's preferences: voice, planning, commands, comments. Reaches an agent through the `@.agents/AGENTS.md` line at the top of the project's own root `AGENTS.md`. Never linked into `.claude/`. |
-| `bin/link.sh` | The linker. Run from the project root, not from `.agents/`. Refuses to run if the kit is not inside the project. Re-running is safe — it re-points symlinks and never touches a real file. |
-| `AGENTS.md.template` | Starting point for a project's `AGENTS.md`. Copied, not linked. |
-| `rules/*.md` | Generic rules. Land at `.claude/rules/<name>.md`. |
-| `rules/ansible/*.md` | Ansible rules. Land in the same flat `.claude/rules/`, so a name must not collide with a generic rule. |
-| `skills/<name>/` | One skill per directory, `SKILL.md` plus its references. `agents/openai.yaml` is the Codex counterpart and travels with it. |
-| `commands/*.md` | Slash commands. Land at `.claude/commands/<name>.md`. |
-| `docs/agents/*.md` | Issue-tracker conventions the skills read by path. Land at `docs/agents/` in the project, not under `.claude/`, because that is where the skills look. |
+`AGENTS.md` is never linked into `.claude/`. It reaches an agent through the
+`@.agents/AGENTS.md` line at the top of the project's own root `AGENTS.md`,
+so the kit's preferences arrive by reference rather than by symlink.
+
+`AGENTS.md.template` is a starting point for a project's own `AGENTS.md`, and
+is copied rather than linked — a project edits its copy.
+
+Neither appears in `link.sh`'s table, so `--all` skips both. Everything else
+the kit holds is listed by `.agents/bin/link.sh --list`, which reads the
+directories rather than a list written here.
 
 `docs/agents/triage-labels.md` is written to be overridden: the right-hand
 column is per-tracker. Replace the symlink with a real file to change it.
