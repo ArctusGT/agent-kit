@@ -102,17 +102,26 @@ Trivial work may be done directly:
   - Often means small, not unilateral. The Maintainer stages what they accept
     and the Agent commits that; see `.claude/rules/the-index-is-the-maintainers.md`.
 
-
-### comments
-- Keep comments short, never bigger than the code it is supporting.
-- Use comments for WHY, not WHAT. Code should be self-documenting. Comments should explain business logic or non-obvious decisions.
-  - 1-2 lines + <3 bullet points.
-  - If it can't be shortened it should probably be documentation.
-
 ### documentation
 - The system, the code and the config are the account of how things are. Prose about them is a cache.
 - An explanation goes to the nearest home that can be checked and no further: the code, then a comment on the line, then the directory's README, then the ticket, then an ADR once ratified. `.claude/rules/where-an-explanation-belongs.md` is the ordering and why it runs that way.
 - A README is for the technician using that directory: the commands, and the traps. Not decisions, not state.
+
+### comments
+- **What one fool can understand, another can.** Use plain words, short sentences,
+  no jargon, little assumed background.
+- **Code explains**. If it can't, start with line comments within the block above the code it supports.
+  - Code readability *must* be maintained; Comments never litter code like spam. A ratio of `1:4` comments-to-code.
+  - **Declarations are an exception**; a file that is mostly `key: value` has no code to *reframe*, so neither the ratio nor re-framing has anything to hold. The exemption is the same shape as the file-header (below).
+- **A block header is an exception**, if the block of code itself doesn't read self-explanatory -> try re-framing the code again. If you fail twice, a header is acceptable.
+    - It does *not* scale with block size itself: it is instead *reframed with* the code and its internal comments.
+    - Bullet points are preferred to long sentences or multiple paragraphs.
+    - Say what the block does and why, in spoken sentences that each have a subject.
+    - Compression that drops the subject or has nothing to do with the code is worse than no header or comment at all.
+- **A file header is preferred** over a table in a readme, or to explain what the file does as a whole when not self-explanatory from its name or location in the tree.
+  - It *may* be larger than the code the file contains; a config with 2 working lines to a 20 line comment explaining what the file does.
+- Which material belongs in a comment at all, rather than in a README, a ticket
+  or an ADR: `.claude/rules/comments-do-not-carry-the-design.md`.
 
 ### commands
 
