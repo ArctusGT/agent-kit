@@ -28,8 +28,6 @@ nothing re-checks.
    Nothing between them the reader does not type.
 3. **The explainers**, below the commands, and only for what the commands did
    not make obvious.
-4. **How each file in the directory is used**: parameters, common errors, and
-   troubleshooting an agent or a search would not reach.
 
 **Never open with principles the reader has not arrived at yet.** The Agent
 knows the subject and the reader does not, so an explainer placed above the
