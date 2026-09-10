@@ -3,6 +3,24 @@
 **Every README in this repository, without exception. Commands first,
 explanation after, and never the complete story.**
 
+## What a README is for, before what shape it takes
+
+Two things, and every line earns its place against one of them:
+
+- the commands for using the code and config that directory holds
+- the traps the next technician or agent would otherwise fall into
+
+**Ask this of each line before checking any of the shape below: what falsifies
+this, and where does it live?** A line describing how the system is arranged,
+recording a value the system still holds, or restating a decision already
+written beside the code has an owner on another rung —
+`where-an-explanation-belongs.md` says which. Shape is worth nothing until the
+material belongs here at all.
+
+That order matters because a rule about shape invites a review about shape. A
+README can pass every check below, and every line in it still be a claim
+nothing re-checks.
+
 ## The order
 
 1. **Who the document is for.** One or two sentences.

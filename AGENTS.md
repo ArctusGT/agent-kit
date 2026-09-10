@@ -110,7 +110,9 @@ Trivial work may be done directly:
   - If it can't be shortened it should probably be documentation.
 
 ### documentation
-- Keep documentation close to the source - within a Readme.md in the parent directory.
+- The system, the code and the config are the account of how things are. Prose about them is a cache.
+- An explanation goes to the nearest home that can be checked and no further: the code, then a comment on the line, then the directory's README, then the ticket, then an ADR once ratified. `.claude/rules/where-an-explanation-belongs.md` is the ordering and why it runs that way.
+- A README is for the technician using that directory: the commands, and the traps. Not decisions, not state.
 
 ### commands
 

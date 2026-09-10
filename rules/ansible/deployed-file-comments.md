@@ -21,10 +21,10 @@ carrying a timestamp or a run id churns every managed file on every converge.
 template and never reaches the host. Converting a `#` line to `{# #}` loses
 nothing and is the fix for almost every existing case.
 
-Anything longer than a couple of lines belongs in the repository's
-documentation, cited by a stable key from the file that would otherwise have
-carried it. The document holding the note carries a line at its top saying what
-the keys are.
+Anything longer than a couple of lines is on the wrong rung, and
+`where-an-explanation-belongs.md` says which one it wants. A key citing a
+document from the file that would otherwise have carried the note is a
+breadcrumb: read the tickets, or ask the Maintainer.
 
 ## Never
 

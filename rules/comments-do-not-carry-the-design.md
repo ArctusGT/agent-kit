@@ -10,7 +10,7 @@ Each of those has a home that can be checked, and a comment is not one:
 |---|---|
 | what the system guarantees | the spec or ticket that claims it, once |
 | what the work is trying to prove | that ticket's criteria |
-| what was observed to happen | with its subject, saying how it was taken |
+| what the system is doing now | nowhere: read it again, the way it was read the first time |
 | what another component does | nowhere: it is falsified by an edit its reader never sees |
 
 > **The test: can this comment be made false by an edit in a different file?**

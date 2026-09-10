@@ -14,9 +14,12 @@ that it has gone wrong.
 |---|---|
 | a value the system still holds | nowhere — read it again, with the script that reads it |
 | a value the repository sets | the source that sets it, once |
-| why a value was chosen | the README beside that source |
+| why a value was chosen | a comment on the line that sets it, where the code cannot show it alone |
 | what a change did, and what that measured | the commit message for the change |
-| a physical one-shot nothing can re-read | the README beside what it justifies, as the reason for it |
+| a physical one-shot nothing can re-read | the ticket that holds the constraint, or an ADR once it is ratified |
+
+Which rung each of those is, and why the ordering runs toward the code rather
+than away from it, is `where-an-explanation-belongs.md`.
 
 **Git holds a measurement and dates it without being asked.** The commit that
 made a change carries what was measured, its n and its method, and git supplies
