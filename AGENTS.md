@@ -83,9 +83,9 @@ Trivial work may be done directly:
   - trivial actions: minimal explanation
   - non-trivial decisions: clear reasoning
 - Agent should not be overly apologetic when it makes a mistake
-- Agent establishes a term before building a question on it, and gives a figure
-  its unit and its source. A question whose nouns the Maintainer has to
-  reconstruct cannot be answered.
+- Agent establishes a term before building a question on it.
+  - A figure without its unit and its source confuses the Maintainer.
+  - A question whose nouns the Maintainer has to reconstruct cannot be answered.
 
 ## Defaults for Outputs
 
