@@ -30,6 +30,22 @@ A decision, a measurement, or a description of how the system is arranged
 belongs on another rung. A reader wanting one of those gets a better answer
 from the system.
 
+## Moving material between rungs
+
+**A claim being moved is a claim being re-asserted.** Check it against its
+subject before writing it down again. A move feels like formatting, so nothing
+fires the check that writing it the first time would have.
+
+- **Read what the code does now**, not what the text says it does.
+- **Check any value it quotes.** A number written out in prose is a copy, and a
+  copy drifts.
+- **When two copies disagree, at least one is wrong.** Establish which before
+  writing the surviving one down.
+
+Moving toward the code lands a claim nearer to whatever would falsify it, and
+that makes the check cheap rather than unnecessary: a comment moved down beside
+the task it described turned out to name the wrong account.
+
 ## Finding what a ticket decided
 
 Read the tickets, or ask the Maintainer. That is the discovery path, and it

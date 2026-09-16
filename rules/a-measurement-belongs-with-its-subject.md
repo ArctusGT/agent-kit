@@ -39,7 +39,8 @@ description of anything. A reader wanting a value gets it faster from the system
   criterion to doubt before it is satisfied —
   `a-raised-criterion-can-still-be-wrong.md`.
 - **Never migrate one into READMEs to rescue it.** That republishes every claim
-  in it at once, which is `verify-before-relocating.md` at document scale.
+  in it at once, which is `where-an-explanation-belongs.md`'s check at document
+  scale.
   Delete it, and let git hold what was there.
 
 ## Why this needs a rule

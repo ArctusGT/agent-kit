@@ -25,9 +25,9 @@ Each of those has a home that can be checked, and a comment is not one:
 A hypothesis in a spec, correctly framed there as the thing nothing yet tests,
 restated as an invariant in a file header. The header then reads as a
 requirement rather than a guess, so the next agent defends it instead of
-changing it, and every file repeating it makes it harder to question.
-`verify-before-relocating.md` covers the copying: repetition is not
-corroboration.
+changing it, and every file repeating it makes it harder to question. A claim
+repeated identically in four files is not thereby verified. It is one unverified
+claim with four copies, and the repetition reads as corroboration.
 
 **A file header says what the file is.** One or two lines. It does not say what
 the design is for.
