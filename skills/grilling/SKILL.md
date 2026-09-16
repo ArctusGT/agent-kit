@@ -21,6 +21,8 @@ Format a round like so:
 ➡️ <your recommended answer>
 ```
 
+Ask through a **scenario**: give an example of the behaviour that would follow from an answer and let the question fall out of it, rather than putting the abstract question directly. An abstract question arrives carrying your framing, and the user answers inside it — including when the answer they need is outside it. So open broadly and narrow late: leave a particular in play until a later round, or until running the thing makes it obvious, because settling one early for a tidy frontier closes an option the user would have taken once they had seen it work. Save the sharp explicit question for what actually blocks progress.
+
 Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
 
 Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.

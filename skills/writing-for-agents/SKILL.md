@@ -58,6 +58,8 @@ Splitting one document into two spends one of the two loads, so split only when 
 - **By sequence**: split a run of steps where the post-completion steps tempt the agent to rush the one in front of it. Keeping them out of view drives more legwork on the current task. Beware the reverse: merging sequences exposes each step's later steps to what follows, inviting premature completion.
 - **By invocation**, skill-specific: see [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md).
 
+Each skill **stands alone**: it carries the behaviour it needs and names no other skill. A call into another skill is a **dependency** that fails quietly — unlinked, uninstalled or renamed, the call simply does not happen, and nothing reports it — and it drags the target's assumptions in with it. Inline the behaviour instead. Where a skill must point outward, point at a document.
+
 ## Leading words
 
 A **leading word** is a compact concept already living in the model's pretraining that the agent thinks with while running the document (_lesson_, _fog of war_, _tracer bullets_). Repeated as a token, never as a sentence, it accumulates a distributed definition and anchors a whole region of behaviour in the fewest tokens, by recruiting priors the model already holds. Coining your own works if you define it clearly, but a made-up word recruits no priors: you pay in definition tokens what a pretrained word gives free; reach for an existing word first.
