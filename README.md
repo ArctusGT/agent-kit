@@ -169,3 +169,7 @@ symlink — the submodule is not checked out. `.agents/bin/link.sh --list` and
 `ls -l .claude/rules` both show it.
 
 Still stuck: ask the Maintainer rather than guessing at the layout.
+
+## Licence
+
+MIT. See `LICENSE`, which names the two upstream sources this kit adapts.
