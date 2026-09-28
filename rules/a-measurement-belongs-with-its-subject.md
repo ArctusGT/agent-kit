@@ -43,6 +43,9 @@ description of anything. A reader wanting a value gets it faster from the system
   scale.
   Delete it, and let git hold what was there.
 
+The one exception is a prototype's findings under `.research/`, written before
+there is a subject to hold them — `research-is-opt-in.md`.
+
 ## Why this needs a rule
 
 **It fails by accumulating correctness.** Every line is true when written, every
