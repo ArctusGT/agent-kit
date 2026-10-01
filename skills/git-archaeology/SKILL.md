@@ -1,6 +1,6 @@
 ---
 name: git-archaeology
-description: Recover from git history why something in the repository is the way it is, where a file came from, what a deleted document said, or what a closed ticket recorded. Use when the code, its comments and its nearest README do not explain it; when the Maintainer names a thing by description rather than by a word that appears in the tree; or when a file-scoped git log came back thin.
+description: Recover from git history why something in the repository is the way it is, where a file came from, what a deleted document said, or what a closed slice recorded. Use when the code, its comments and its nearest README do not explain it; when the Maintainer names a thing by description rather than by a word that appears in the tree; or when a file-scoped git log came back thin.
 ---
 
 # Git archaeology
@@ -8,11 +8,11 @@ description: Recover from git history why something in the repository is the way
 The question this answers: *if this is not explained by the code, by a comment,
 or by a README next to it, what am I looking for in `.git`?*
 
-Where the issue tracker closes a ticket by deleting its file, and a document's
+Where the effort tracker closes a slice by deleting its file, and a document's
 content migrates as the repository is reorganised, the answer is routinely in
-history: in a commit message, in a file that no longer exists, or in a ticket
-that was deleted whole. This repo's `docs/agents/issue-tracker.md` says what
-closure does to a ticket here. Every one of those is reachable, and none of them
+history: in a commit message, in a file that no longer exists, or in a slice
+that was deleted whole. This repo's `docs/agents/effort-tracker.md` says what
+closure does to a slice here. Every one of those is reachable, and none of them
 is reachable by the reflex.
 
 ## The reflex, and what it actually measures

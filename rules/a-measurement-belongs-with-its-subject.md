@@ -16,7 +16,7 @@ that it has gone wrong.
 | a value the repository sets | the source that sets it, once |
 | why a value was chosen | a comment on the line that sets it, where the code cannot show it alone |
 | what a change did, and what that measured | the commit message for the change |
-| a physical one-shot nothing can re-read | the ticket that holds the constraint, or an ADR once it is ratified |
+| a physical one-shot nothing can re-read | the slice that holds the constraint, or an ADR once it is ratified |
 
 Which rung each of those is, and why the ordering runs toward the code rather
 than away from it, is `where-an-explanation-belongs.md`.

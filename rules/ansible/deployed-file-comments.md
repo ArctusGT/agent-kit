@@ -24,7 +24,7 @@ nothing and is the fix for almost every existing case.
 Anything longer than a couple of lines is on the wrong rung, and
 `where-an-explanation-belongs.md` says which one it wants. A key citing a
 document from the file that would otherwise have carried the note is a
-breadcrumb: read the tickets, or ask the Maintainer.
+breadcrumb: read the slices, or ask the Maintainer.
 
 ## Never
 

@@ -8,8 +8,8 @@ Each of those has a home that can be checked, and a comment is not one:
 
 | the claim | where it belongs |
 |---|---|
-| what the system guarantees | the spec or ticket that claims it, once |
-| what the work is trying to prove | that ticket's criteria |
+| what the system guarantees | the spec or slice that claims it, once |
+| what the work is trying to prove | that slice's criteria |
 | what the system is doing now | nowhere: read it again, the way it was read the first time |
 | what another component does | nowhere: it is falsified by an edit its reader never sees |
 
@@ -61,6 +61,6 @@ agent asked to change the design argues the header back at the Maintainer,
 having never established that anything authored it on purpose.
 
 It wins downstream too. A comment describing one file honestly becomes a line in
-a ticket, and a criterion is harder to doubt than a comment —
+a slice, and a criterion is harder to doubt than a comment —
 `a-raised-criterion-can-still-be-wrong.md` is what to do once it has got that
 far. This rule is how it does not.

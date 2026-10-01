@@ -1,7 +1,7 @@
 # Provenance is git's; a measurement carries its method
 
 Every line this repository holds, and the same test for each: a rule, a README, a
-ticket, a comment in a task file.
+slice, a comment in a task file.
 
 **A line's provenance is when the repository changed, and who changed it.** Git
 answers that exactly, so state the fact and let git carry the date — *"moved here

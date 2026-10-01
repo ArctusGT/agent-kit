@@ -1,6 +1,6 @@
 # agent-kit
 
-Rules, skills and issue-tracker conventions shared across the Maintainer's
+Rules, skills and effort-tracker conventions shared across the Maintainer's
 projects. It is consumed as a git submodule at `.agents/`, and each project
 picks which entries it wants.
 
@@ -17,7 +17,7 @@ account.
     git add .gitmodules .agents AGENTS.md CLAUDE.md .claude docs/agents
 
 `--list` prints every entry and whether the project has it. `--all` links the
-generic rules, all skills, all commands and the issue-tracker docs; the Ansible
+generic rules, all skills, all commands and the effort-tracker docs; the Ansible
 rules are left out and asked for by name:
 
     .agents/bin/link.sh --group ansible

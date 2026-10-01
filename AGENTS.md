@@ -24,7 +24,7 @@
 for it.** The target must be clear and observable, never hypothetical.
 
 It is too easy for Agent to get absorbed in making X work, at the expense of
-the target X is supposed to serve. A placeholder issue, abstraction or schema
+the target X is supposed to serve. A placeholder slice, abstraction or schema
 aimed at something nobody has seen yet invents its own scope, and that scope
 then drifts from what the running thing makes obvious.
 
@@ -107,7 +107,7 @@ Trivial work may be done directly:
 
 ### documentation
 - The system, the code and the config are the account of how things are. Prose about them is a cache.
-- An explanation goes to the nearest home that can be checked and no further: the code, then a comment on the line, then the directory's README, then the ticket, then an ADR once ratified. `.claude/rules/where-an-explanation-belongs.md` is the ordering and why it runs that way.
+- An explanation goes to the nearest home that can be checked and no further: the code, then a comment on the line, then the directory's README, then the slice, then an ADR once ratified. `.claude/rules/where-an-explanation-belongs.md` is the ordering and why it runs that way.
 - A README is for the technician using that directory: the commands, and the traps. Not decisions, not state.
 
 ### comments
@@ -123,7 +123,7 @@ Trivial work may be done directly:
     - Compression that drops the subject or has nothing to do with the code is worse than no header or comment at all.
 - **A file header is preferred** over a table in a readme, or to explain what the file does as a whole when not self-explanatory from its name or location in the tree.
   - It *may* be larger than the code the file contains; a config with 2 working lines to a 20 line comment explaining what the file does.
-- Which material belongs in a comment at all, rather than in a README, a ticket
+- Which material belongs in a comment at all, rather than in a README, a slice
   or an ADR: `.claude/rules/comments-do-not-carry-the-design.md`.
 
 ### commands
@@ -165,9 +165,9 @@ to print it without writing a second copy.
 
 ## Agent skills
 
-### Issue tracker
+### Effort tracker
 
-Issues live as markdown files under `.issues/<feature>/` in this repo. See `docs/agents/issue-tracker.md`.
+Efforts live as markdown files under `.efforts/<effort>/` in this repo, one slice per file. See `docs/agents/effort-tracker.md`.
 
 ### Triage labels
 

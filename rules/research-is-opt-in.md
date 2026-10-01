@@ -30,11 +30,11 @@ evidence. Discard it rather than reasoning from it.
 
 ## Nothing outside points in
 
-No ticket, README, comment or commit message cites a path under `.research/`.
+No slice, README, comment or commit message cites a path under `.research/`.
 The directory is untracked, so a reference to it dangles in every other clone
 and in the history.
 
-**Material leaves only when the Maintainer promotes it**, into a ticket, the
+**Material leaves only when the Maintainer promotes it**, into a slice, the
 code or the config. A claim being moved is a claim being re-asserted, so check
 it against the running system on the way out —
 `where-an-explanation-belongs.md`.
@@ -43,7 +43,7 @@ it against the running system on the way out —
 
 `a-measurement-belongs-with-its-subject.md` bans a document whose subject is
 measurements. `.research/` is the exception, because a prototype's findings
-exist before there is a subject for them to belong to: no role, no ticket, no
+exist before there is a subject for them to belong to: no role, no slice, no
 config yet.
 
 What still holds inside: every measurement carries its method, so it can be

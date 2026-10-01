@@ -11,8 +11,8 @@ An explanation goes to the nearest home that can be checked, and no further:
 | how something is | the system, the code, the config — read them |
 | what a line is doing, where the code cannot show it alone | a comment on that line |
 | how to use the code a directory holds, and the traps in using it | that directory's README |
-| a finding, constraint or decision holding the system in a shape someone means to improve | the ticket that pursues the better outcome |
-| a constraint no ticket can resolve | an ADR, once the Maintainer ratifies it |
+| a finding, constraint or decision holding the system in a shape someone means to improve | the slice that pursues the better outcome |
+| a constraint no slice can resolve | an ADR, once the Maintainer ratifies it |
 | when a line changed, and who changed it | git, which answers without being asked |
 
 Each rung sits further from what would falsify the claim than the one above it.
@@ -46,10 +46,10 @@ Moving toward the code lands a claim nearer to whatever would falsify it, and
 that makes the check cheap rather than unnecessary: a comment moved down beside
 the task it described turned out to name the wrong account.
 
-## Finding what a ticket decided
+## Finding what a slice decided
 
-Read the tickets, or ask the Maintainer. That is the discovery path, and it
-needs no breadcrumb: a ticket is deleted when it closes, so a reference to one
+Read the slices, or ask the Maintainer. That is the discovery path, and it
+needs no breadcrumb: a slice is deleted when it closes, so a reference to one
 dangles by design.
 
 An ADR is the exception, because an ADR does not close. Cite it **by name, and

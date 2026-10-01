@@ -4,7 +4,7 @@
 it was asked for. Two gates, and either one is enough:**
 
 1. **A human asked.** The Maintainer, directly.
-  - A ticket criterion counts only where the Maintainer has accepted it.
+  - A slice criterion counts only where the Maintainer has accepted it.
   - A rule only when the Maintainer has 
 2. **The reader's next action needs it**, and that need traces back to a human
   decision.
@@ -36,23 +36,23 @@ Prevention is a pattern in how work is done, not an artefact added to the code.
 Fixing the thing is an order of magnitude quicker than establishing whether it
 might occur.
 
-## A ticket is work
+## A slice is work
 
 **Where the shape of a problem turns on a decision nobody has made, do not
-raise a ticket. Ask the question.**
+raise a slice. Ask the question.**
 
-A ticket invents the shape it describes, and every criterion under it inherits
+A slice invents the shape it describes, and every criterion under it inherits
 that invention. It then reads as settled scope to whoever picks it up, long
 after the Agent that wrote it is gone.
 
 The test is not whether the problem is real. It is whether a human answer could
 **dissolve** it rather than refine it. A plan the Maintainer already holds, a
 tool nobody has agreed to adopt, a structure a researcher has not accepted: any
-of these can remove the problem entirely, and a ticket written first will have
+of these can remove the problem entirely, and a slice written first will have
 built criteria on the assumption they did not.
 
-**One line to the Maintainer beats a well-evidenced ticket.** Evidence makes a
-pre-empted ticket more convincing, not more correct.
+**One line to the Maintainer beats a well-evidenced slice.** Evidence makes a
+pre-empted slice more convincing, not more correct.
 
 ## Why this needs a rule
 

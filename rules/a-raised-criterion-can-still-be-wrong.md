@@ -4,7 +4,7 @@
 criterion before building the machinery. Bring the Maintainer the doubt, not the
 workaround.**
 
-A ticket brief is authoritative about **scope** — what is being asked for, and
+A slice brief is authoritative about **scope** — what is being asked for, and
 what is out of bounds. It is not authoritative about **truth**. A criterion is
 someone's best statement of a requirement at the time they wrote it, and the
 Agent implementing it usually learns more about the system than the person who
@@ -20,7 +20,7 @@ At that moment, stop and trace the criterion:
 
 - **To the human decision behind it.** A Maintainer weighed something and chose.
   That stands until they change it.
-- **Or to a claim.** A comment, a header, an earlier ticket's wording, an
+- **Or to a claim.** A comment, a header, an earlier slice's wording, an
   Agent's own summary. A claim is a hypothesis wearing an imperative voice, and
   it does not bind anything.
 
@@ -35,7 +35,7 @@ nothing back", which becomes "has no inbound path at all". Every step is a fair
 paraphrase of the last and the end is unrecognisable from the start.
 
 So trace to the **origin**, not to the previous restatement. `git log -S` on the
-phrase finds it faster than reading forward from the ticket.
+phrase finds it faster than reading forward from the slice.
 
 ## Never
 
@@ -50,12 +50,12 @@ phrase finds it faster than reading forward from the ticket.
 ## Why this needs a rule
 
 Everything in the tracker pushes one way. A brief is "the authoritative
-specification", a ticket without criteria is rejected outright, and staging
-makes a raised ticket carry the Maintainer's authority. All of that is correct
+specification", a slice without criteria is rejected outright, and staging
+makes a raised slice carry the Maintainer's authority. All of that is correct
 for scope, and all of it reads as correct for truth.
 
-`solicited-work.md` warns that a ticket invents the shape it describes — but
-only before the ticket is written. Afterwards there is nothing that licenses
+`solicited-work.md` warns that a slice invents the shape it describes — but
+only before the slice is written. Afterwards there is nothing that licenses
 doubt, so the Agent's only legal move is to satisfy the sentence, and it will
 build whatever that takes.
 

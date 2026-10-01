@@ -1,13 +1,13 @@
 # Triage Labels
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.
+The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's effort tracker.
 
 Labels `removed` have no place in a single maintainer repo.
 
 
 | Label in mattpocock/skills | Label in our tracker | Meaning                                  |
 | -------------------------- | -------------------- | ---------------------------------------- |
-| `needs-triage`             | `needs-triage`              | Maintainer needs to update this issue                     |
+| `needs-triage`             | `needs-triage`              | Maintainer needs to update this slice                     |
 | `needs-info`               | `needs-info`                | Waiting on more information from either the Maintainer or work not completed |
 | `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
 | `ready-for-human`          | `ready-for-human`           | Requires HITL implementation                              |
