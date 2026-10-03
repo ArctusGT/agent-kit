@@ -17,6 +17,38 @@ into a document that collects measurements —
 > **The test: can git answer it without being told what to look for?** Then the
 > date is noise.
 
+## The exception: a copy that leaves git
+
+**An exported artefact is read where git cannot answer, so it carries its own
+provenance.** An exported artefact is a rendered file meant to be read outside
+the repository: a PDF or HTML page published to SharePoint or any
+documentation host, or a printed sheet. A reader holding one cannot run
+`git log`, and two printed copies look equally current.
+
+Every exported artefact carries a provenance block, derived from git and never
+typed by hand:
+
+- **Version: the source, not the export.** The hash of the last commit that
+  touched the files it was rendered from, that commit's date, and a revision
+  number counting the commits that touched them. The export cannot carry its
+  own hash, because the hash only exists once the export is committed.
+- **Who: the git author of that source commit.** Never the Agent's name, and
+  never *"<agent> on behalf of"*. The Agent is not a git author, so this holds
+  without anyone checking it.
+- **Uncommitted sources render as a draft.** A DRAFT watermark, and
+  *"uncommitted"* where the version would be. Nothing without a real hash goes
+  on a wall or a host.
+
+The export is committed separately from its sources, and the export commit's
+message names the source hash it was rendered from.
+
+A project adds its own fields to the block — an approver, a location, a review
+date — in its `AGENTS.md`. This rule names none.
+
+Everything else in the repository keeps git as its only provenance. The
+exception covers the exported copy, not the source it came from: the markdown
+behind a PDF carries no version line.
+
 `ansible-roles.md` uses the word in this sense already — *"git is the
 provenance"*. `docs/adr/0001` uses **provenance marker** for something else, where
 a glossary term was first resolved; that is a different object, not a competing
