@@ -102,8 +102,8 @@ Trivial work may be done directly:
   - suggest a rule be added to a modular rule file '.claude/rules/'
   - NEVER LEAVE HINTS IN CODE/COMMENTS/README.MD FILES
 - Commit often. Commit fixes NOT features.
-  - Often means small, not unilateral. The Maintainer stages what they accept
-    and the Agent commits that; see `.claude/rules/the-index-is-the-maintainers.md`.
+  - Often means small. The Agent commits each verified fix by path as it goes,
+    and leaves the rest of the index alone; see `.claude/rules/the-index-is-the-maintainers.md`.
 
 ### documentation
 - The system, the code and the config are the account of how things are. Prose about them is a cache.

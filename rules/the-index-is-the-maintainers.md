@@ -1,59 +1,49 @@
-# The index is the Maintainer's
+# The Agent commits its own work; the rest of the index is the Maintainer's
 
-**The Agent never stages. The Maintainer reviews drafted work and stages what
-they accept, so what is staged is what has been agreed to and nothing else.**
-
-An Agent that stages its own work commits the Maintainer's review state along
-with it, under a message describing neither.
+**The Agent stages and commits its own work as it goes, without waiting for
+the Maintainer to stage it. Whatever else is in the index belongs to the
+Maintainer and is never touched.**
 
 ## The default loop
 
-1. **The Agent drafts and stops.** It says what it changed and why, in the chat.
-   It does not commit.
-2. **The Maintainer reviews and stages** what they accept — in lazygit, or
-   however they like.
-3. **The Agent reads the staged set, then commits it.**
+1. **The Agent finishes one small fix and verifies it.**
+2. **The Agent commits it by explicit path:**
 
-       git diff --cached --name-only
-       git commit -F <message-file>
+       git add <path>
+       git commit -F <message-file> -- <path> <path>
 
-   The message describes exactly the staged set. Where the staged set is not
-   what the Agent expected, it says so and stops rather than writing a message
-   that covers the difference.
-4. **The Agent then asks about what is still unstaged.** An unstaged change has
-   not been agreed to. It is not forgotten, not rejected, and not the Agent's to
-   revert or re-edit.
+   One path at a time on `git add`, never a glob and never a directory. The
+   message is written after the diff of those paths has been read, and
+   describes exactly them.
+3. **The Agent says in the chat what it committed**, by commit and by file.
+   The Maintainer reviews in the log and asks for a revert where it is wrong.
 
-## Where the Maintainer asks the Agent to carry work through
+## Slices stay with the Maintainer
 
-Some work is handed over whole — build it, verify it, commit as you go. There
-the Agent commits by explicit path and still stages nothing:
-
-    git commit -F <message-file> -- <path> <path>
-
-That form takes the working tree at those paths and ignores the index
-completely, so a Maintainer reviewing in parallel is never disturbed.
+- **The Agent never stages or commits a new slice.** Drafting one is allowed
+  (`docs/agents/effort-tracker.md`); a staged slice is an accepted one, and
+  accepting is the Maintainer's.
+- **The Agent deletes a slice only when the Maintainer says to.** Closing is
+  the Maintainer's call. The deletion is `rm` and a commit by path, in a
+  commit of its own.
+- Ticking a criterion and setting `ready-for-closure` go in the commit with
+  the work they describe.
 
 ## Never
 
-- **`git add -A`, `git add .`, or a bare directory** — each sweeps up whatever
-  the Maintainer was part-way through deciding about.
-- **`git reset`, `git stash`, `git checkout -- <path>`, `git restore`** — all
-  discard staged state, and none of it is the Agent's.
-- **A commit whose message was written before its contents were read.** The
-  staged set is established first; the message is written to fit it.
-
-The one carve-out: a file the Agent has just created is untracked, and
-`git commit -- <path>` cannot reach it. `git add <that exact path>` is
-permitted — named in full, one path at a time, never a glob and never a
-directory.
+- **`git add -A`, `git add .`, or a bare directory.** Each sweeps up whatever
+  the Maintainer was part-way through.
+- **`git reset`, `git stash`, `git checkout -- <path>`, `git restore`.** All
+  discard state that is not the Agent's.
+- **A bare `git commit`.** It takes the whole index, including anything the
+  Maintainer staged. Name the paths.
+- **A commit holding a file the Agent did not change in this task.** Where a
+  path already had the Maintainer's edits in it, the Agent asks first.
 
 ## Why this needs a rule
 
-Staging is the Maintainer's only channel for "I have read this and I accept
-it", and it is silent. Nothing in a commit announces that half of it was
-somebody else's in-progress review, and the diff still applies cleanly, so the
-usual signals — a conflict, a failing check, a broken build — all stay quiet.
-
-It is found later, by reading a commit message that does not mention what the
-commit contains.
+Review moved from the index to the log: the Maintainer reads what was
+committed rather than staging what is accepted. The protections on the
+index stay, because the failure they prevent is silent either way. A commit
+that swept up somebody else's half-reviewed work applies cleanly, and
+nothing in its message says so.
