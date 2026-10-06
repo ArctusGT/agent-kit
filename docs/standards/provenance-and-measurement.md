@@ -52,7 +52,7 @@ behind a PDF carries no version line.
 `.agents/rules/ansible/ansible-roles.md` uses the word in this sense already — *"git is the
 provenance"*. `docs/adr/0001` uses **provenance marker** for something else, where
 a glossary term was first resolved; that is a different object, not a competing
-definition, and neither is in `CONTEXT.md`.
+definition, and neither is in `GLOSSARY.md`.
 
 ## What a rule drops on top of that
 
