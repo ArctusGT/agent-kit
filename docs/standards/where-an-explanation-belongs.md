@@ -67,7 +67,7 @@ from the code, in a place with more authority and less to contradict it.
 What arrives at the top reads as documentation. An agent asked to change the
 design then argues the README back at the Maintainer, having never established
 that anyone authored the claim on purpose;
-`a-raised-criterion-can-still-be-wrong.md` is what to do once it has got that
+`.agents/rules/a-raised-criterion-can-still-be-wrong.md` is what to do once it has got that
 far, and this is how it does not.
 
 The gradient was built when this kit kept provenance in the repository rather

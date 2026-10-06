@@ -12,7 +12,7 @@ observed to do.** It carries how it was taken, so that the next reader can take
 it again rather than trust it. Written in the commit that made the change, git
 supplies the date; written anywhere else, it goes with its subject and never
 into a document that collects measurements —
-`a-measurement-belongs-with-its-subject.md`.
+`.agents/rules/a-measurement-belongs-with-its-subject.md`.
 
 > **The test: can git answer it without being told what to look for?** Then the
 > date is noise.
@@ -49,7 +49,7 @@ Everything else in the repository keeps git as its only provenance. The
 exception covers the exported copy, not the source it came from: the markdown
 behind a PDF carries no version line.
 
-`ansible-roles.md` uses the word in this sense already — *"git is the
+`.agents/rules/ansible/ansible-roles.md` uses the word in this sense already — *"git is the
 provenance"*. `docs/adr/0001` uses **provenance marker** for something else, where
 a glossary term was first resolved; that is a different object, not a competing
 definition, and neither is in `CONTEXT.md`.

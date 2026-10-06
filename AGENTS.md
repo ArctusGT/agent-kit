@@ -107,8 +107,9 @@ Trivial work may be done directly:
 
 ### documentation
 - The system, the code and the config are the account of how things are. Prose about them is a cache.
-- An explanation goes to the nearest home that can be checked and no further: the code, then a comment on the line, then the directory's README, then the slice, then an ADR once ratified. `.claude/rules/where-an-explanation-belongs.md` is the ordering and why it runs that way.
-- A README is for the technician using that directory: the commands, and the traps. Not decisions, not state.
+- An explanation goes to the nearest home that can be checked and no further: the code, then a comment on the line, then the directory's README, then the slice, then an ADR once ratified. `.agents/docs/standards/where-an-explanation-belongs.md` is the ordering and why it runs that way.
+- A README is for the technician using that directory: the commands, and the traps. Not decisions, not state. Before writing or editing one: `.agents/docs/standards/readme-shape.md`.
+- A date or a measurement written into a file: `.agents/docs/standards/provenance-and-measurement.md`.
 
 ### comments
 - **What one fool can understand, another can.** Use plain words, short sentences,
@@ -124,7 +125,7 @@ Trivial work may be done directly:
 - **A file header is preferred** over a table in a readme, or to explain what the file does as a whole when not self-explanatory from its name or location in the tree.
   - It *may* be larger than the code the file contains; a config with 2 working lines to a 20 line comment explaining what the file does.
 - Which material belongs in a comment at all, rather than in a README, a slice
-  or an ADR: `.claude/rules/comments-do-not-carry-the-design.md`.
+  or an ADR: `.agents/docs/standards/comments-do-not-carry-the-design.md`.
 
 ### commands
 

@@ -37,7 +37,7 @@ and in the history.
 **Material leaves only when the Maintainer promotes it**, into a slice, the
 code or the config. A claim being moved is a claim being re-asserted, so check
 it against the running system on the way out —
-`where-an-explanation-belongs.md`.
+`.agents/docs/standards/where-an-explanation-belongs.md`.
 
 ## Inside, a findings document is allowed
 
@@ -47,7 +47,7 @@ exist before there is a subject for them to belong to: no role, no slice, no
 config yet.
 
 What still holds inside: every measurement carries its method, so it can be
-taken again (`provenance-and-measurement.md`). A findings file with no method
+taken again (`.agents/docs/standards/provenance-and-measurement.md`). A findings file with no method
 is a list of guesses.
 
 ## Why this needs a rule

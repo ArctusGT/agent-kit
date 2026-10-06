@@ -19,11 +19,11 @@ that it has gone wrong.
 | a physical one-shot nothing can re-read | the slice that holds the constraint, or an ADR once it is ratified |
 
 Which rung each of those is, and why the ordering runs toward the code rather
-than away from it, is `where-an-explanation-belongs.md`.
+than away from it, is `.agents/docs/standards/where-an-explanation-belongs.md`.
 
 **Git holds a measurement and dates it without being asked.** The commit that
 made a change carries what was measured, its n and its method, and git supplies
-who and when. `provenance-and-measurement.md` covers what to write beside a
+who and when. `.agents/docs/standards/provenance-and-measurement.md` covers what to write beside a
 measurement; it is the method, so the next reader can take it again.
 
 ## Never a ledger
@@ -39,7 +39,7 @@ description of anything. A reader wanting a value gets it faster from the system
   criterion to doubt before it is satisfied —
   `a-raised-criterion-can-still-be-wrong.md`.
 - **Never migrate one into READMEs to rescue it.** That republishes every claim
-  in it at once, which is `where-an-explanation-belongs.md`'s check at document
+  in it at once, which is `.agents/docs/standards/where-an-explanation-belongs.md`'s check at document
   scale.
   Delete it, and let git hold what was there.
 

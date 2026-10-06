@@ -22,7 +22,7 @@ template and never reaches the host. Converting a `#` line to `{# #}` loses
 nothing and is the fix for almost every existing case.
 
 Anything longer than a couple of lines is on the wrong rung, and
-`where-an-explanation-belongs.md` says which one it wants. A key citing a
+`.agents/docs/standards/where-an-explanation-belongs.md` says which one it wants. A key citing a
 document from the file that would otherwise have carried the note is a
 breadcrumb: read the slices, or ask the Maintainer.
 
@@ -44,5 +44,5 @@ The trap is that the instinct is usually right and the medium is wrong: a
 comment written onto a host **to correct a misleading comment** reproduces the
 defect one layer down.
 
-`../comments-do-not-carry-the-design.md` is the same rule for a file that stays
+`.agents/docs/standards/comments-do-not-carry-the-design.md` is the same rule for a file that stays
 in the repository, where git history at least reaches the copy.

@@ -42,12 +42,12 @@ the design is for.
   the sentence doesn't, so the sentence becomes the constraint.
 - **The same assertion in more than one file.** Correct it where it is owned,
   and delete the copies.
-- **A measurement in a comment.** `a-measurement-belongs-with-its-subject.md`
+- **A measurement in a comment.** `.agents/rules/a-measurement-belongs-with-its-subject.md`
   puts it where the thing that produced it lives, and never in a document that
   collects measurements.
 - **A comment written to correct a misleading comment.** Delete the wrong one.
 
-`ansible/deployed-file-comments.md` is this rule for a file written onto a host,
+`.agents/rules/ansible/deployed-file-comments.md` is this rule for a file written onto a host,
 where the copy cannot be reached by reading git history at all.
 
 ## Why this needs a rule
@@ -62,5 +62,5 @@ having never established that anything authored it on purpose.
 
 It wins downstream too. A comment describing one file honestly becomes a line in
 a slice, and a criterion is harder to doubt than a comment —
-`a-raised-criterion-can-still-be-wrong.md` is what to do once it has got that
+`.agents/rules/a-raised-criterion-can-still-be-wrong.md` is what to do once it has got that
 far. This rule is how it does not.
