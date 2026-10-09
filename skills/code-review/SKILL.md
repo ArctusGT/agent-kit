@@ -10,6 +10,8 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
+Run this from the top-level agent. A sub-agent that starts the two reviewers hands back before they report, and their findings arrive after its work is already returned. Where a sub-agent did the work, review it once the sub-agent has reported.
+
 The effort tracker should have been provided to you. If `docs/agents/effort-tracker.md` is missing, tell the user to run `/setup-matt-pocock-skills`.
 
 ## Process

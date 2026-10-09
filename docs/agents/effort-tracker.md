@@ -66,6 +66,7 @@ Closed slices are retained only in git. The code base is representative of work 
 - Agents *MUST NOT* close slices themselves
 - Agents *MAY* set a slice's Status to `ready-for-closure` once every acceptance criterion it can confirm is confirmed
   - Before setting it, the Agent runs the `code-review` skill on the commits that did the slice's work, and fixes what it finds or names it in the slice for the Maintainer.
+  - Where a sub-agent did the work, the Agent that briefed it runs the review once the sub-agent has reported. The brief tells the sub-agent to commit and report back, and leaves both the review and the Status to the briefing Agent.
   - This asks for review; it does not close anything. `ready-for-closure` means the Maintainer needs to review for closure.
   - Agents should remind the maintainer when slices are `ready-for-closure`.
   - The Maintainer greps for the term to find slices awaiting review, so an agent that finishes the work and leaves the Status alone hides it
