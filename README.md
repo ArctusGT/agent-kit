@@ -25,6 +25,9 @@ rules are left out and asked for by name:
 Then edit `AGENTS.md` — the first line imports the shared preferences, the rest
 is this project's.
 
+The hooks in `.agents/hooks/` are not linked. Each is wired into the project's
+`.claude/settings.json` by hand; `--help` on a hook prints the entry to add.
+
 ## Cloning a project that already uses it
 
     git clone --recurse-submodules git@github.com:<you>/<project>.git

@@ -143,9 +143,11 @@ to expect after it.
 
 #### Scripts are files, never inline
 
-**Agent never runs a multi-line script inline.** No heredocs, no `python3 -c`,
-no `bash -c` carrying embedded newlines, not when handing a command to Maintainer,
-and not when running one itself.
+**A script that changes anything, or whose output is reported as evidence, is a
+file before it runs**, whether the Agent runs it or hands it to the Maintainer.
+A short read-only probe may stay inline. `.agents/hooks/block-inline-scripts.sh`
+blocks the commonest slip, a multi-line script passed to an interpreter with
+`-c`.
 
 Write the script to the scratchpad directory, then run the file. Two commands,
 both short enough to read:
