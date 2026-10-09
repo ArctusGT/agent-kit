@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Create a blank slice from templates/slice.md, under the next free number.
+#
+#   .agents/bin/new-slice <effort> <slug>
+#
+# Writes .efforts/<effort>/<NNN>-<slug>.md in the project that holds the kit,
+# creating the effort directory if needed, and prints the path. The slice's
+# heading is the slug with its hyphens turned to spaces.
+#
+# Closed slices are deleted, so NNN is one past the highest number found
+# either in the directory or anywhere in git history for that effort. A number
+# is never handed out twice.
+set -euo pipefail
+
+usage() {
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+
+case "${1:-}" in -h|--help) usage; exit 0 ;; esac
+[ $# -eq 2 ] || { usage >&2; exit 1; }
+
+effort=$1
+slug=$2
+for name in "$effort" "$slug"; do
+  [[ $name =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "new-slice: '$name' must be lower-case letters, digits and hyphens" >&2; exit 1; }
+done
+
+KIT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+PROJECT=$(dirname "$KIT")
+dir=.efforts/$effort
+
+# Every slice filename this effort has had: on disk now, and in history.
+highest=$(
+  {
+    ls "$PROJECT/$dir" 2>/dev/null || true
+    git -C "$PROJECT" log --all --format= --name-only -- "$dir/" 2>/dev/null || true
+  } | sed -n 's#^\(.*/\)\{0,1\}\([0-9][0-9][0-9]\)-.*\.md$#\2#p' | sort -n | tail -1
+)
+next=$(printf '%03d' $((10#${highest:-0} + 1)))
+
+path=$dir/$next-$slug.md
+title=$(echo "${slug//-/ }" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+
+mkdir -p "$PROJECT/$dir"
+sed "s/^## Slice Name$/## $title/" "$KIT/templates/slice.md" > "$PROJECT/$path"
+echo "$path"

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Create a blank README from templates/readme.md.
+#
+#   .agents/bin/new-readme <dir>
+#
+# Writes <dir>/README.md, with the directory's path as its heading, and prints
+# the path. <dir> must already exist. An existing README is never overwritten.
+set -euo pipefail
+
+usage() {
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+
+case "${1:-}" in -h|--help) usage; exit 0 ;; esac
+[ $# -eq 1 ] || { usage >&2; exit 1; }
+
+dir=${1%/}
+[ -d "$dir" ] || { echo "new-readme: no directory '$dir'" >&2; exit 1; }
+path=$dir/README.md
+[ -e "$path" ] && { echo "new-readme: '$path' already exists; edit it instead" >&2; exit 1; }
+
+KIT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+sed "s#{{dir}}#$dir#" "$KIT/templates/readme.md" > "$path"
+echo "$path"

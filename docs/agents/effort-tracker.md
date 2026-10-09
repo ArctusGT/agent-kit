@@ -9,7 +9,8 @@ answers; the issue never lives in `.efforts/`.
 
 ## When a skill says "publish to the effort tracker"
 
-Create a new file under `.efforts/<effort>/` (creating the directory if needed).
+For a slice, run `.agents/bin/new-slice <effort> <slug>` and fill in the file it
+prints. For the spec, write `.efforts/<effort>/spec.md` directly.
 
 ## When a skill says "fetch the relevant slice"
 
