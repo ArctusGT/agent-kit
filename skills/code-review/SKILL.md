@@ -10,8 +10,6 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
-Run this from the top-level agent. A sub-agent that starts the two reviewers hands back before they report, and their findings arrive after its work is already returned. Where a sub-agent did the work, review it once the sub-agent has reported.
-
 The effort tracker should have been provided to you. If `docs/agents/effort-tracker.md` is missing, tell the user to run `/setup-matt-pocock-skills`.
 
 ## Process
@@ -74,6 +72,8 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
+
+Each reviewer's report arrives as a separate message, not as the result of the call that started it. Wait until every reviewer you started has reported before step 5; this skill is often run by a sub-agent, and one that hands back early leaves the findings to arrive after its work is returned.
 
 ### 5. Aggregate
 
