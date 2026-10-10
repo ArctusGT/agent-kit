@@ -44,5 +44,5 @@ The trap is that the instinct is usually right and the medium is wrong: a
 comment written onto a host **to correct a misleading comment** reproduces the
 defect one layer down.
 
-`.agents/docs/standards/documentation-gradient.md`, under Comments, is the same rule for a file that stays
+The `hierarchical-documentation` skill is the same rule for a file that stays
 in the repository, where git history at least reaches the copy.

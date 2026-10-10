@@ -8,13 +8,14 @@ explanation goes to the nearest home that can be checked, and no further.
 
 | the material | where it goes |
 |---|---|
-| why a line is written the way it is, where the code cannot show it | a comment on that line |
+| what a thing is or does | its name: a variable, function or constant |
+| why the code is shaped this way, where its names cannot say | a comment beside it |
 | what a function is for and how it is used | a comment on the function |
 | what a file is, where its name and place do not say | a file header of one or two lines |
 | how to use a directory's code, and the traps in using it | that directory's README — `readme-shape.md` |
-| what a change did, and what was measured to show it | the commit message |
+| why a change was made, and what was measured to show it worked | the commit message |
 | a value the repository sets | the source that sets it, once |
-| what the system guarantees, what the work must prove, a constraint someone means to improve | the slice that pursues it, once |
+| what the work still has to prove, a constraint someone means to improve | the slice that pursues it, once; it is deleted at closure, so anything that must outlive it moves up the ladder first |
 | a constraint no slice can resolve | an ADR, once the Maintainer ratifies it, cited by name only |
 | when a line changed, and who changed it | git, which answers without being asked |
 | how something is, or a value the system still holds | nowhere: read it again, with the script or command that reads it |
@@ -22,30 +23,11 @@ explanation goes to the nearest home that can be checked, and no further.
 Each rung sits further from what would falsify the claim than the one above it.
 **Material moves toward the code, never away from it.**
 
-## Comments
+## Inside the code
 
-**Add a comment when:**
-- A reader might wonder *why* the code is written this way
-- A decision was made to *not* do something obvious — the absence needs explaining
-- Something surprising is happening that could cause a future reader to pause
-- There's a footgun or dangerous assumption that can't be eliminated by restructuring
-
-**Remove a comment when:**
-- It restates what the code already says clearly
-- A rename or extraction has made it redundant
-
-**Check for overflow.** After naming is complete, re-read the changed code as if
-encountering it for the first time. What questions would a future reader have that
-the identifiers don't answer? Common overflow: why this approach instead of an
-obvious alternative, performance constraints that shaped the design, or a mental
-model needed to reason about the code. Be wary of evaluating from your own
-perspective — you already know the context from the conversation. The test is what
-someone reading this code cold would wonder about.
-
-**Place comments as close as possible to the code they describe.** A comment that
-applies to one branch of an `if` belongs inside that branch, not above the whole
-statement. Reference specific identifiers in comments where possible — this makes
-the relationship between comment and code explicit and harder to accidentally break.
+Names, comments and the commit message belong to the
+`hierarchical-documentation` skill, which says when a comment earns its place
+and what overflows to the commit message. This standard covers the rest.
 
 ## Measurements
 
