@@ -2,13 +2,14 @@ MIT License
 
 Copyright (c) 2026 Matt Pocock
 Copyright (c) 2026 Lauren Tan
-Copyright (c) 2026 Glen Thompson <glen@gtme.net>
+Copyright (c) 2026 Joël Quenneville
+Copyright (c) 2026 Glen Thompson
 
-Portions of this repository are adapted from https://github.com/mattpocock/skills
-(Copyright (c) 2026 Matt Pocock) and from
+Portions of this repository are adapted from;
+https://github.com/mattpocock/skills (Copyright (c) 2026 Matt Pocock),
 https://github.com/cursor/plugins/tree/main/pstack (Copyright (c) 2026 Lauren
-Tan), both under the MIT License. Everything else is Copyright (c) 2026 Glen
-Thompson.
+Tan), https://github.com/JoelQ/skills (Copyright (c) 2026 Joël Quenneville),
+under the MIT License. Everything else is Copyright (c) 2026 Glen Thompson.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
