@@ -162,10 +162,10 @@ Three files are in play: the project's root `AGENTS.md`, the `CLAUDE.md` symlink
 beside it, and the kit's `.agents/AGENTS.md` that the first one imports. Nothing
 loads if the `CLAUDE.md` symlink is missing, and it fails silently.
 
-Check it from the project root. A run that answers with the two Golden rules
-bullets has the whole chain working:
+Check it from the project root. A run that quotes the line under "Make it work"
+has the whole chain working:
 
-    claude -p "Quote the two bullets under 'Golden rules' from your loaded instructions."
+    claude -p "Quote the line under 'Make it work' from your loaded instructions."
 
 An agent that ignores a rule or cannot see a skill is almost always a dangling
 symlink — the submodule is not checked out. `.agents/bin/link.sh --list` and
