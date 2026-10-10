@@ -7,7 +7,13 @@ Implement the work described in the spec or slice, then put it through four revi
 
 1. **Implement.** Use /tdd where possible, at pre-agreed seams. Run typechecking and single test files regularly.
 2. **Commit once per acceptance criterion.** When a criterion is confirmed, tick it in the slice and commit the tick with the work that met it, using /commit-messages. Run the full test suite before the last commit.
-3. **Review, one pass at a time.** Each pass reads the code the previous pass's fixes left, so they run in this order and never in parallel. For each of the first three, start a sub-agent on this slice's commits and wait for its report; run the fourth yourself, since it starts its own sub-agents. Fix and commit before starting the next:
+3. **Review, one pass at a time.** Each pass reads the code the previous pass's fixes left, so they run in this order and never in parallel. For a sub-agent's pass, start it on this slice's commits and wait for its report; run /code-review yourself, since it starts its own sub-agents. Fix and commit before starting the next.
+
+   A **small** slice, under 80 lines changed across its commits by `git diff --stat`, takes two passes:
+   1. One sub-agent running /structural-review and /method-review together, reporting both.
+   2. /code-review: the spec, the repo's standards, and stale READMEs.
+
+   Every other slice takes four:
    1. /structural-review: does the code's shape match the domain?
    2. /method-review: is each method as clear as it could be?
    3. /hierarchical-documentation: names and comments. It edits in place; read its changes before committing them, and use its commit-message notes.
