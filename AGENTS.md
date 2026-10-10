@@ -96,7 +96,7 @@ Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Ev
 
 ## Scripts
 
-A script that changes anything, or whose output you report as evidence, is a file in the scratchpad before it runs. Write it, then run it: as a file it can be read before it runs, fixed when it’s wrong, and re-run to reproduce the result. A short read-only probe can stay inline.
+A script whose output you report as evidence, or that changes anything outside the repo's tracked files, is a file in the scratchpad before it runs. Write it, then run it: as a file it can be read before it runs, fixed when it’s wrong, and re-run to reproduce the result. An edit to tracked files can run inline, since `git diff` shows what it did, and so can a short read-only probe.
 
 ## Commands
 
