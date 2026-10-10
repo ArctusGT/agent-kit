@@ -61,8 +61,8 @@ We need to be on the same page with terminology. When communicating, use this la
 ## Documentation
 
 - Most code changes do not need an internal documentation change. Agents can read the code.
-- Gradient documentation towards code first see `.claude/rules/a-measurement-belongs-with-its-subject.md`
-- Comments and Readme.md files are for us, see `.agents/docs/standards/readme-shape.md`
+- An explanation goes to the nearest home that can be checked: the code, then a comment, then the directory's README, then the slice. Git holds the history, so no dates or logs in prose. `/code-review` holds you to `.agents/docs/standards/documentation-gradient.md`.
+- Comments and README files are for us. A new README starts from `.agents/bin/new-readme`; its shape is `.agents/docs/standards/readme-shape.md`.
 - Comments describe how a thing is used, and move when the code moves. To be used mostly to describe functions, not to annotate every line of behavior.
 
 ## Plans and work artifacts
@@ -89,6 +89,10 @@ Non-trivial includes any of the following (not already approved or specified in 
 
 - Verify with a browser or computer use only through a skill built for it; that skill’s existence is the approval. Outside one, ask first. Notify when using such as skill.
 - Security is important, but should not be over-indexed on, especially for dev mode/maintainer-only features.
+
+## Commits
+
+Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Everything else in the index is ours, so never `git add -A` or `.`, `reset`, `stash`, `restore`, or a bare `git commit`.
 
 ## Scripts
 

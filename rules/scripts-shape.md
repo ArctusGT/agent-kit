@@ -39,7 +39,7 @@ then takes two characters off each line of it.
 ## Where this sits
 
 `--help` is the environment answering, which is the nearest home that can be
-checked — `.agents/docs/standards/where-an-explanation-belongs.md` is the ordering. A script is the
+checked — `.agents/docs/standards/documentation-gradient.md` is the ordering. A script is the
 unusual case on it: the code itself can answer, rather than only be read.
 
 ## Finding one

@@ -14,7 +14,7 @@ Two things, and every line earns its place against one of them:
 this, and where does it live?** A line describing how the system is arranged,
 recording a value the system still holds, or restating a decision already
 written beside the code has an owner on another rung —
-`where-an-explanation-belongs.md` says which. Shape is worth nothing until the
+`documentation-gradient.md` says which. Shape is worth nothing until the
 material belongs here at all.
 
 That order matters because a rule about shape invites a review about shape. A
