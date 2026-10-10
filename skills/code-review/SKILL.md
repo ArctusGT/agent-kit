@@ -43,7 +43,7 @@ Code structure, method clarity, naming and comments are out of scope here. The s
 
 - The full diff command and commit list.
 - The list of standards-source files you found in step 3.
-- The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) for every README in or above a directory the diff touches, each claim that no longer holds at `HEAD`: quote the line and what the code does instead. A README one branch wrote goes stale when a branch merged beside it changes the behaviour it describes. Distinguish hard violations from judgement calls. Skip anything tooling enforces. Under 400 words."
+- The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) for every README in or above a directory the diff touches, each claim that no longer holds at `HEAD`: quote the line and what the code does instead. A README one branch wrote goes stale when a branch merged beside it changes the behaviour it describes. Distinguish hard violations from judgement calls. Skip anything tooling enforces, and a slice's Status, which moves to `ready-for-closure` after this review. Under 400 words."
 
 **Spec sub-agent prompt** should include:
 
