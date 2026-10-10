@@ -164,9 +164,10 @@ presence guards, polymorphism instead of type branching.
 - Restructures code (extracts methods, flattens conditionals) but gives
   extracted methods working names rather than polished ones — naming is a
   separate concern.
-- Focuses on judgment calls about code structure. Mechanical Ruby/Rails idioms
-  belong in rubocop. Framework-level judgment (trust ActiveRecord, reach for
-  scopes) is a separate concern.
+- Focuses on judgment calls about code structure. Mechanical language idioms
+  belong in the project's linter. Framework-level judgment (trust the ORM,
+  reach for its query helpers) is a separate concern.
+- The examples are Ruby; the principles apply in any language.
 
 ## Further reading
 

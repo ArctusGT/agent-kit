@@ -14,8 +14,9 @@ the decision, and the trade-offs.
 
 ## Subject Line
 
-Format: `[TICKET-123] Imperative verb phrase (#PR)` when a ticket exists,
-or just `Imperative verb phrase` for small fixes/tooling.
+Format: `Imperative verb phrase`. A slice the commit works on is named in
+the body as `<effort>/<NNN>` (e.g. `agent-tooling/002`), never in the
+subject.
 
 - **Imperative mood**: "Add", "Fix", "Remove", "Prevent", "Handle" --
   never past tense.
@@ -23,12 +24,11 @@ or just `Imperative verb phrase` for small fixes/tooling.
 - **50 chars max** Drop words the context already implies --
   e.g. "Add NOT NULL on" beats "Add NOT NULL constraint on" because
   "NOT NULL" already means constraint.
-- PR number in parens at the end if it's a squash merge.
 
 Examples:
-- `[PROJ-123] Show contact subscriptions in CSV`
+- `Show contact subscriptions in CSV`
 - `Fix flaky cypress test`
-- `Remove unused field from API payload (#123)`
+- `Remove unused field from API payload`
 
 ## Body
 
@@ -65,7 +65,7 @@ changes):
 5. **Scope boundaries**: What's explicitly *not* included. Use phrases
    like "out of scope for this change" or "a follow-up will..."
 6. **Incidental discoveries**: Anything found along the way. "While
-   digging into this, I discovered..."
+   digging into this, the work turned up..."
 7. **Future work**: What should happen next, if anything.
 8. **Living with this change**: When a change introduces a new
    constraint, convention, or tool, include practical guidance for
@@ -76,8 +76,10 @@ changes):
 
 ### Voice and Tone
 
-- **First person**: "I chose to", "I considered", "My philosophy was".
-  The author is present in the narrative.
+- **Impersonal**: the Agent writes the message and the Maintainer is the
+  git author, so "I" would put the Agent's reasoning in the Maintainer's
+  mouth. Write "This commit...", "X was considered", or name the actor:
+  "the Maintainer chose", "the Agent measured".
 - **Conversational but precise**: Reads like explaining the change to a
   colleague over coffee, not like formal documentation.
 - **Length tracks reasoning, not diff size**: A complex redesign gets
@@ -91,7 +93,7 @@ changes):
 - **Section headers**: For long messages, use markdown-style headers
   (`Performance`, `Security`, `Notable choices`, etc.) with underlines
   or blank-line separation.
-- **Cross-references**: Cite commit SHAs, PR numbers, Sentry links, or
+- **Cross-references**: Cite commit SHAs, slice references, or
   documentation URLs. The reader should be able to trace anything.
   Only reference durable artifacts — planning documents, conversation
   context, and internal phase labels (e.g. "Phase 1") don't survive
@@ -102,8 +104,8 @@ changes):
   them to read other files.
 - **Principles/constraints**: Before describing a solution, state the
   constraints that guided it as a numbered list.
-- **Alternatives considered**: "I considered X but it broke constraint
-  Y. Eventually I settled on Z."
+- **Alternatives considered**: "X was considered, but it broke
+  constraint Y. Z holds all of them."
 - **Code snippets / payload shapes**: Include when they clarify the
   change (JSON shapes, SQL, small code examples).
 - **Mermaid diagrams**: For complex control flow, show before/after as
@@ -115,8 +117,8 @@ changes):
 - **Deployment safety**: Note whether the change is safe to deploy at
   any time, requires ordering, or is behind a feature flag. "This
   change was written to be safe to deploy any time."
-- **Verification**: Describe how you confirmed the change works. "I
-  verified this by...", "I was able to reproduce the error using..."
+- **Verification**: Describe how the change was confirmed to work, with
+  the method, so it can be taken again: "Verified by...", "Reproduced with..."
 - **ENV variables**: When introducing new environment variables, list
   them explicitly.
 - **State combinatorics**: For UI work, document the space of possible
@@ -128,13 +130,13 @@ These signal phrases appear naturally and serve specific roles:
 
 - "This commit..." -- demarcates what the diff does vs. background.
 - "Note that..." -- adds caveats the reader should be aware of.
-- "While digging into this, I discovered..." -- incidental findings.
+- "While digging into this, the work turned up..." -- incidental findings.
 - "out of scope for this change" -- explicit scope boundary.
-- "I've already spent my refactoring budget" -- scope discipline.
+- "The refactoring budget for this change is spent" -- scope discipline.
 - "This is purely a refactor" or "pure refactor (ish)" -- declares no
   behavior change, sometimes with noted small exceptions.
 - "A follow-up will..." -- promises future work without blocking now.
-- "Longer-term, we probably want to..." -- non-blocking future vision.
+- "Longer-term, this probably wants..." -- non-blocking future vision.
 
 ## Examples
 
@@ -143,7 +145,7 @@ These signal phrases appear naturally and serve specific roles:
 ```
 Fix ExampleService class typo
 
-While browsing the code I discovered a typo in the ExampleService API. A
+The ExampleService API had a typo, found while browsing the code. A
 constant was written as `Inte::ExampleService` rather than
 `Integrations::ExampleService`.
 ```
@@ -151,7 +153,7 @@ constant was written as `Inte::ExampleService` rather than
 ### Bug fix
 
 ```
-[PROJ-456] Fix flaky contact search spec (#234)
+Fix flaky contact search spec
 
 The contact search spec can flake when generated names for the "match" and
 "non-match" contacts happen to overlap. This hard-codes the names for this
@@ -161,21 +163,21 @@ specific test and removes generated names from the factory.
 ### Feature with design reasoning
 
 ```
-[PROJ-123] Show contact subscriptions in CSV
+Show contact subscriptions in CSV
 
-Currently we don't show subscription data for archived contacts in the CSV
-export because the association we use only returns active contacts. We want
-to show all subscriptions associated with the contact that are accessible to
+The CSV export shows no subscription data for archived contacts, because
+the association it uses returns only active contacts. The export should
+show all subscriptions associated with the contact that are accessible to
 the user.
 
-I wanted to maintain 3 principles:
+Three principles had to hold:
 
 1. Permission logic stays in the permission layer
 2. No N+1: subscription data must be batch-loadable
 3. Serializer is active/archived-contact agnostic
 
-I considered a variety of solutions but they kept breaking one or more
-of these constraints. Eventually I settled on a solution that worked
+Several solutions were considered, and each broke one or more of these
+constraints. The one that held all three works
 like this:
 
 - DB view aggregates subscription IDs as an array on each
@@ -187,11 +189,11 @@ like this:
 ### Refactor with before/after
 
 ```
-[PROJ-789] Refactor session service
+Refactor session service
 
 In the spirit of "make the change easy, then make the easy change",
 this commit re-structures the entire tree of services into a form that
-better suits the changes we're about to make.
+better suits the changes that follow it.
 
 Pure refactor (ish)
 -------------------
@@ -210,8 +212,8 @@ incremental strategy:
 2. Backfill existing data or enable flag
 3. Make column non-nullable / remove flag (only after step 2 is done)
 
-Each commit explains where it sits in the sequence: "Now that we've
-cleaned up the existing API keys, we can safely add the stricter
+Each commit explains where it sits in the sequence: "Now that the
+existing API keys are cleaned up, it is safe to add the stricter
 constraints everywhere."
 
 ### Incident Chain Narrative
@@ -219,17 +221,17 @@ constraints everywhere."
 When fixing bugs introduced by earlier commits, tell the chain story:
 
 ```
-In abc12345..., we started moving away from archived records. Then we
-tried to rein it back in with def67890..., but this is subject to
+abc12345 started moving away from archived records. Then def67890
+tried to rein it back in, but that is subject to
 the default scope again. This commit adds thorough testing to ensure
-we neither *over* select nor *under* select records to delete.
+the query neither *over* selects nor *under* selects records to delete.
 ```
 
 ## Anti-Patterns
 
 - "Updated files" or "Various fixes" -- say what actually changed.
 - Starting the body with what the commit does rather than why.
-- Passive voice ("it was decided") -- use "I chose" or "we decided".
+- Hiding who decided ("it was decided") -- name the actor ("the Maintainer chose") or the reason.
 - Explaining what the diff shows -- the reader can see the diff. Explain
   the *reasoning* behind it.
 - Including coordination notes for the current team ("go talk to X
@@ -243,7 +245,7 @@ When asked to commit:
 
 1. Read the diff carefully.
 2. Identify the *story*: what was the state before, what changed, why.
-3. Draft subject line in imperative mood with ticket if available.
+3. Draft subject line in imperative mood.
 4. Write body following the narrative arc.
 5. Add enrichment (cross-refs, diagrams, benchmarks) where it helps.
 6. Verify line wrapping at 72 characters.
