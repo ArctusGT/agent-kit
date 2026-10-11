@@ -107,6 +107,17 @@ You sometimes need me to run commands on a host for security reasons.
 - *Always* codeblock commands or operations you need me to run on hosts. They're easily missed in prose.
   - Multiple lines in one block are fine, and preferred over several blocks where the steps belong together. One line per step, in order.
   - Break the codeblock if there's something to look out for or would cause a trap if subsequent commands were to run.
+- Steps I do by hand outside a shell (a web UI, a mailbox, a dashboard) are a **nested numbered list**, since they're missed in prose just as easily as commands are. One item per page, opened by its direct URL; one sub-step per action, each control named as it's labelled, in backticks. A repeated sequence cites the earlier sub-steps instead of restating them:
+
+  ```
+  1. Open `edith/helpdesk#2` at http://localhost:8929/edith/helpdesk/-/issues/2
+     1. Click right `sidebar` > `Add time entry` (`+`)
+     2. Enter: 3h, `date` to 2026-10-11, `summary` to `ai: test`
+     3. Save
+  2. Open any `Work item` at http://localhost:8929/edith/slurm-infra/-/work_items
+     1. Same steps as above (1.1-1.3) *except* `summary` to `internal test`
+     2. Save
+  ```
 - **Avoid `&&` chains.** If they'll be difficult for me to breakdown what they're doing. The only exception is a pipe that genuinely feeds one command's output into the next.
   - Alternatively give me a step-by-step of what the chain does/provides - I'm happy to run a chain if I just know what it's doing and can learn something.
 
