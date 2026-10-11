@@ -64,14 +64,15 @@ Specs are created using a skill. Agents defer to the maintainer to invoke a skil
 
 Closed slices are retained only in git. The code base is representative of work done.
 
-- Agents *MUST NOT* close slices themselves
-- Agents *MAY* set a slice's Status to `ready-for-closure` once every acceptance criterion it can confirm is confirmed
+- Agents close a slice only on the Maintainer's confirmation
+- While a criterion waits on the Maintainer, such as a converge or a live observation, the slice's Status is `ready-for-human`
+- Once every acceptance criterion is ticked, Agents set the Status to `ready-for-closure` and leave the slice **unstaged and uncommitted**
   - Before setting it, the Agent runs the `code-review` skill on the commits that did the slice's work, and fixes what it finds or names it in the slice for the Maintainer.
-  - This asks for review; it does not close anything. `ready-for-closure` means the Maintainer needs to review for closure.
-  - Agents should remind the maintainer when slices are `ready-for-closure`.
-  - The Maintainer greps for the term to find slices awaiting review, so an agent that finishes the work and leaves the Status alone hides it
-- The maintainer may instruct an agent to close a slice using `ready-for-closure` if it's acceptance criteria is confirmed to be completed
-  - An agent should ensure work is committed before it delete the slice file, and then commits
+  - The Maintainer reviews it in the working tree, where every slice awaiting closure shows as one unstaged change. Agents remind the Maintainer which ones are waiting.
+- **Staging a `ready-for-closure` slice is the Maintainer's confirmation to close it**
+  - This is the one staged change an Agent commits without being asked; a staged slice with any other Status is a raised one, and stays the Maintainer's.
+  - At the start of a turn, the Agent checks `git diff --cached --name-only -- .efforts/` for one. It commits the slice as staged, then deletes the file and commits the deletion, with no further instruction.
+  - The closing commit is the record, since git is the only place the slice survives: what the slice delivered, and anything named in it for the Maintainer that is still open.
   - The effort directory and spec may remain unless the maintainer instructs the agent to remove it
 
 ## Comments

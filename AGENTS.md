@@ -92,7 +92,7 @@ Non-trivial includes any of the following (not already approved or specified in 
 
 ## Commits
 
-Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Everything else in the index is ours, so never `git add -A` or `.`, `reset`, `stash`, `restore`, or a bare `git commit`.
+Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Everything else in the index is ours, so never `git add -A` or `.`, `reset`, `stash`, `restore`, or a bare `git commit`. The one exception is a slice I've staged at `ready-for-closure`: that is my go-ahead to commit and close it (`docs/agents/effort-tracker.md`).
 
 ## Scripts
 
@@ -107,6 +107,29 @@ You sometimes need me to run commands on a host for security reasons.
 - *Always* codeblock commands or operations you need me to run on hosts. They're easily missed in prose.
   - Multiple lines in one block are fine, and preferred over several blocks where the steps belong together. One line per step, in order.
   - Break the codeblock if there's something to look out for or would cause a trap if subsequent commands were to run.
+- Steps I do by hand outside a shell (a web UI, a mailbox, a dashboard) are a **nested numbered list**, since they're missed in prose just as easily as commands are. One item per page, opened by its direct URL; one sub-step per action, each control named as it's labelled, in backticks; each item ends in what I should see. A repeated sequence cites the earlier sub-steps instead of restating them. It's rendered as markdown, never inside a code block, which would show it as raw text:
+
+  1. Open a new issue in `edith/helpdesk` at http://localhost:8929/edith/helpdesk/-/issues/new
+     1. `Description` > `Choose a template` > `Booking`
+     2. Fill in `Asset`, `Checkout date`, `Return date`, `Project code`, `Fee`
+     3. Click `Create issue`
+
+     → **You should see:** labels `booking`, `awaiting agreement` and `outbound` on the right sidebar
+  2. On the new ticket, add a comment
+     1. Enter `/convert_to_ticket tester@edith.cloud`
+     2. Click `Comment`
+
+     → **You should see:** "GitLab didn't send a thank_you Service Desk email"; *nothing reaches `tester` yet*
+  3. Add a second comment
+     1. Paste the offer, from `Asset` to "I agree", with its fields filled in
+     2. Click `Comment`
+
+     → **You should see:** the comment in `tester`'s inbox, from `helpdesk@`
+  4. In `tester`'s mail client
+     1. Reply to the offer with "I agree"
+
+     → **You should see:** the reply on the ticket as a comment from `tester@edith.cloud`
+
 - **Avoid `&&` chains.** If they'll be difficult for me to breakdown what they're doing. The only exception is a pipe that genuinely feeds one command's output into the next.
   - Alternatively give me a step-by-step of what the chain does/provides - I'm happy to run a chain if I just know what it's doing and can learn something.
 
