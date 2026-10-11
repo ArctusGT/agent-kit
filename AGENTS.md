@@ -92,7 +92,7 @@ Non-trivial includes any of the following (not already approved or specified in 
 
 ## Commits
 
-Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Everything else in the index is ours, so never `git add -A` or `.`, `reset`, `stash`, `restore`, or a bare `git commit`.
+Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Everything else in the index is ours, so never `git add -A` or `.`, `reset`, `stash`, `restore`, or a bare `git commit`. The one exception is a slice I've staged at `ready-for-closure`: that is my go-ahead to commit and close it (`docs/agents/effort-tracker.md`).
 
 ## Scripts
 
