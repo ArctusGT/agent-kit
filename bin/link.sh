@@ -5,10 +5,21 @@
 #   .agents/bin/link.sh tdd grilling code-review
 #   .agents/bin/link.sh --all
 #   .agents/bin/link.sh --group ansible
+#   .agents/bin/link.sh --group hooks
 #
 # A real file already at the target is a deliberate local override: it is
 # reported and left alone. A symlink is re-pointed, so re-running is safe.
+#
+# Hooks are not symlinked. Each hook's header carries its "Wire it up" entry,
+# which is merged into the project's .claude/settings.json; an event that
+# already runs the hook's command is left alone. Wiring a hook needs jq.
+# --all wires every hook along with the rest.
 set -euo pipefail
+
+if [ "${1:-}" = "--help" ]; then
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+  exit 0
+fi
 
 KIT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 PROJECT=$(pwd)
@@ -43,12 +54,45 @@ group_names() {
     skills)   ls -d "$KIT"/skills/*/ | xargs -n1 basename ;;
     commands) ls "$KIT"/commands/*.md | xargs -n1 basename | sed 's/\.md$//' ;;
     docs)     ls "$KIT"/docs/agents/*.md | xargs -n1 basename | sed 's/\.md$//' ;;
-    *) echo "link.sh: no group '$1'. Groups: rules ansible skills commands docs" >&2; exit 1 ;;
+    hooks)    ls "$KIT"/hooks/*.sh | xargs -n1 basename | sed 's/\.sh$//' ;;
+    *) echo "link.sh: no group '$1'. Groups: rules ansible skills commands docs hooks" >&2; exit 1 ;;
   esac
+}
+
+SETTINGS=.claude/settings.json
+
+# The hook's "Wire it up" lines as one JSON object, with the kit path in its
+# command made to match where this project keeps the kit.
+hook_entry() {
+  awk '/^# Wire it up/ {f=1; next} f && /^#[[:space:]]*$/ {exit} f {sub(/^# ?/, ""); print}' "$1" \
+    | sed "s#/\\.agents/hooks/#/$REL_KIT/hooks/#" \
+    | { printf '{'; cat; printf '}'; } | jq -c .
+}
+
+hook_command() { hook_entry "$KIT/hooks/$1.sh" | jq -r '[.[][].hooks[].command][0]'; }
+
+hook_wired() {
+  [ -f "$SETTINGS" ] &&
+    jq -e --arg c "$(hook_command "$1")" '[.hooks[]?[]?.hooks[]?.command] | index($c)' "$SETTINGS" >/dev/null
+}
+
+wire_hook() {
+  local n=$1 entry tmp
+  command -v jq >/dev/null || { echo "  !  $n — wiring a hook needs jq"; return; }
+  if hook_wired "$n"; then echo "  =  $SETTINGS — $n already wired"; return; fi
+  entry=$(hook_entry "$KIT/hooks/$n.sh")
+  mkdir -p "$(dirname "$SETTINGS")"
+  [ -e "$SETTINGS" ] || echo '{}' > "$SETTINGS"
+  tmp=$(mktemp)
+  jq --argjson e "$entry" \
+    'reduce ($e | to_entries[]) as $x (.; .hooks[$x.key] += $x.value)' "$SETTINGS" > "$tmp"
+  mv "$tmp" "$SETTINGS"
+  echo "  ->  $SETTINGS — $n"
 }
 
 link_one() {
   local pair src dst dir depth prefix
+  [ -f "$KIT/hooks/$1.sh" ] && { wire_hook "$1"; return; }
   pair=$(locate "$1") || { echo "  ?  $1 — not in the kit"; return; }
   src=${pair%%|*}; dst=${pair##*|}
   dir=$(dirname "$dst")
@@ -74,13 +118,20 @@ case "${1:---list}" in
         else state="-"; fi
         printf '  %-34s %s\n' "$n" "$state"
       done
+    done
+    echo "hooks:"
+    for n in $(group_names hooks); do
+      if ! command -v jq >/dev/null; then state="? (needs jq)"
+      elif hook_wired "$n"; then state="wired"
+      else state="-"; fi
+      printf '  %-34s %s\n' "$n" "$state"
     done ;;
   --all)
-    for g in rules skills commands docs; do
+    for g in rules skills commands docs hooks; do
       for n in $(group_names "$g"); do link_one "$n"; done
     done ;;
   --group)
-    [ $# -ge 2 ] || { echo "link.sh --group <rules|ansible|skills|commands|docs>" >&2; exit 1; }
+    [ $# -ge 2 ] || { echo "link.sh --group <rules|ansible|skills|commands|docs|hooks>" >&2; exit 1; }
     for n in $(group_names "$2"); do link_one "$n"; done ;;
   *)
     for n in "$@"; do link_one "$n"; done ;;

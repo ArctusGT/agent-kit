@@ -17,16 +17,22 @@ account.
     git add .gitmodules .agents AGENTS.md CLAUDE.md .claude docs/agents
 
 `--list` prints every entry and whether the project has it. `--all` links the
-generic rules, all skills, all commands and the effort-tracker docs; the Ansible
-rules are left out and asked for by name:
+generic rules, all skills, all commands and the effort-tracker docs, and wires
+every hook; the Ansible rules are left out and asked for by name:
 
     .agents/bin/link.sh --group ansible
 
 Then edit `AGENTS.md` — the first line imports the shared preferences, the rest
 is this project's.
 
-The hooks in `.agents/hooks/` are not linked. Each is wired into the project's
-`.claude/settings.json` by hand; `--help` on a hook prints the entry to add.
+The hooks in `.agents/hooks/` are not symlinked. `link.sh` merges the entry from
+each hook's "Wire it up" header into the project's `.claude/settings.json`,
+leaving the file's other settings and hooks alone, and skips a hook whose
+command is already there. Wiring needs `jq`, which the hooks need anyway.
+
+Some skills, `pentest` and `retro` among them, set `disable-model-invocation`.
+They run only when typed as a slash command (`/retro`), and an agent asked
+which skills it has will not list them. Linked is all they need.
 
 ## Cloning a project that already uses it
 
