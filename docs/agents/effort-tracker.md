@@ -45,12 +45,13 @@ Specs are created using a skill. Agents defer to the maintainer to invoke a skil
 
 ## Creating slices
 
-- Maintainer or Agents may draft slices but must always do so using a skill.
+- Agents draft slices, always using a skill. The Maintainer edits a slice only to show how something should read, as a baseline for the Agent to revise from.
   - Agents do not waste time asking for permission when they think a slice should be drafted
   - Slices **MUST** not duplicate acceptance criteria vaguely pre-existing in adjacent slices/efforts
     - Pre-existing slices may be enhanced, merged or contributed to after their initial creation with new requirements.
   - Only the maintainer stages a drafted slice.
     - A slice the Maintainer has staged is accepted, and therefore raised. Git carries who staged it and when.
+    - The Agent commits a staged slice as it was staged, without being asked. At the start of a turn it checks `git diff --cached --name-only -- .efforts/`; a staged slice at `ready-for-closure` is closed instead (below).
     - A slice left unstaged is undecided. Not rejected, not forgotten, and not the Agent's to revise or delete on its own
 - Said skill should contain the method of drafting the slice itself, but it *MUST* conform to the template shapes described in [SLICE-TEMPLATE.md](SLICE-TEMPLATE.md)
 - Agents may mark acceptance criteria as "done" themselves whilst informing the Maintainer
@@ -70,8 +71,7 @@ Closed slices are retained only in git. The code base is representative of work 
   - Before setting it, the Agent runs the `code-review` skill on the commits that did the slice's work, and fixes what it finds or names it in the slice for the Maintainer.
   - The Maintainer reviews it in the working tree, where every slice awaiting closure shows as one unstaged change. Agents remind the Maintainer which ones are waiting.
 - **Staging a `ready-for-closure` slice is the Maintainer's confirmation to close it**
-  - This is the one staged change an Agent commits without being asked; a staged slice with any other Status is a raised one, and stays the Maintainer's.
-  - At the start of a turn, the Agent checks `git diff --cached --name-only -- .efforts/` for one. It commits the slice as staged, then deletes the file and commits the deletion, with no further instruction.
+  - The Agent commits the slice as staged, then deletes the file and commits the deletion, with no further instruction.
   - The closing commit is the record, since git is the only place the slice survives: what the slice delivered, and anything named in it for the Maintainer that is still open.
   - The effort directory and spec may remain unless the maintainer instructs the agent to remove it
 

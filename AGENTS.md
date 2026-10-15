@@ -92,7 +92,7 @@ Non-trivial includes any of the following (not already approved or specified in 
 
 ## Commits
 
-Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Everything else in the index is ours, so never `git add -A` or `.`, `reset`, `stash`, `restore`, or a bare `git commit`. The one exception is a slice I've staged at `ready-for-closure`: that is my go-ahead to commit and close it (`docs/agents/effort-tracker.md`). Setting that Status is yours: once every criterion is ticked, run `code-review` on the slice's commits, set `ready-for-closure`, and leave the slice unstaged and uncommitted for me to stage.
+Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Everything else in the index is ours, so never `git add -A` or `.`, `reset`, `stash`, `restore`, or a bare `git commit`. The one exception is a slice under `.efforts/` I've staged: that is my go-ahead to commit it. Slices are yours to draft and leave unstaged; staging a new one raises it, and staging one at `ready-for-closure` closes it (`docs/agents/effort-tracker.md`). Setting that Status is yours too: once every criterion is ticked, run `code-review` on the slice's commits, set `ready-for-closure`, and leave the slice unstaged and uncommitted for me to stage.
 
 ## Scripts
 
