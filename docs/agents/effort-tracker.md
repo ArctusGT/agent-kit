@@ -5,7 +5,8 @@ effort is a directory; each file in it is one slice of that effort.
 
 An effort is not an issue. An issue is correspondence with someone outside the
 repo, held by the forge and never cloned with it. A slice may name the issue it
-answers; the issue never lives in `.efforts/`.
+answers, in one header line under `**Status:**`, as
+`**ticket:** <group>/<project>#<n>`; the issue never lives in `.efforts/`.
 
 ## When a skill says "publish to the effort tracker"
 
