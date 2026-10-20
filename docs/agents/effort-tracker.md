@@ -50,6 +50,7 @@ Specs are created using a skill. Agents defer to the maintainer to invoke a skil
   - Agents do not waste time asking for permission when they think a slice should be drafted
   - Slices **MUST** not duplicate acceptance criteria vaguely pre-existing in adjacent slices/efforts
     - Pre-existing slices may be enhanced, merged or contributed to after their initial creation with new requirements.
+  - A drafted slice is a file in the main checkout, on the default branch, left unstaged and uncommitted: ready for the Maintainer to stage as the confirmation to commit it. Never in a worktree, on a branch, or in a commit. Worktrees are for work; a slice drafted alongside work in one is still written to the main checkout.
   - Only the maintainer stages a drafted slice.
     - A slice the Maintainer has staged is accepted, and therefore raised. Git carries who staged it and when.
     - The Agent commits a staged slice as it was staged, without being asked. At the start of a turn it checks `git diff --cached --name-only -- .efforts/`; a staged slice at `ready-for-closure` is closed instead (below).
