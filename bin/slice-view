@@ -128,6 +128,8 @@ wt_state() { # $1 root, $2 path, $3 branch, $4 locked, $5 sessions json
   printf '%s' "$out"
 }
 
+# a slice's mark: closing and human states by status, else whether an agent
+# worktree is working it
 glyph() { # $1 status, $2 has a worktree (0/1)
   case $1 in
     ready-for-closure) printf '%s✔%s' "$GRN" "$R" ;;
@@ -136,7 +138,8 @@ glyph() { # $1 status, $2 has a worktree (0/1)
   esac
 }
 
-# fzf lines: shown<TAB>slice file<TAB>worktree path
+# fzf lines: shown<TAB>slice file<TAB>worktree path<TAB>slice id, each of the
+# last three empty where a line has none. graph reads the ids for its order
 list() { # $1 layout, $2 root
   local layout=$1 root=$2 sessions ids
   sessions=$(sessions)
@@ -343,6 +346,8 @@ graph() { # $1 root, $2 the layout whose order it follows
   rm -rf "$store"
 }
 
+# the right pane for a line: its worktree's branch, commits ahead, and changes,
+# then the slice; the flow chart where the line has neither
 preview() { # $1 slice file, $2 worktree path, $3 root
   # fzf hands its prompt to the preview, and the prompt names the layout
   local layout=${FZF_PROMPT%% *}

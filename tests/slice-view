@@ -55,6 +55,8 @@ printf '#!/bin/sh\necho %s\n' "'{\"cwd\":\"$wt/fx/010-merge\",\"state\":\"workin
 chmod +x "$t/bin/claude-sessions"
 export PATH=$t/bin:$PATH
 
+# drawn text without colour, the script's path as V and the temp dir as T, so
+# expected text holds on any host
 plain() { sed 's/\x1b\[[0-9;]*m//g' | sed "s#$view#V#g; s#$t#T#g"; }
 failed=0
 check() { # $1 name, $2 what was drawn; the expected text on stdin
