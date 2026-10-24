@@ -50,12 +50,14 @@ Specs are created using a skill. Agents defer to the maintainer to invoke a skil
   - Agents do not waste time asking for permission when they think a slice should be drafted
   - Slices **MUST** not duplicate acceptance criteria vaguely pre-existing in adjacent slices/efforts
     - Pre-existing slices may be enhanced, merged or contributed to after their initial creation with new requirements.
+    - A rework of a raised slice, any change to its scope or criteria, is left unstaged like a draft and holds only once the Maintainer stages it. Ticking a criterion or setting a Status is not a rework.
   - A drafted slice is a file left unstaged and uncommitted in whichever checkout the Agent is working in, a worktree included: ready for the Maintainer to stage there as the confirmation to commit it. A worktree a slice is drafted in branches from the local default branch, not the remote's, so it sees every slice already raised.
   - A committed slice lands on the default branch straight away. The Agent cherry-picks that one commit onto it in the main checkout, never the whole branch, so unreviewed work on the branch stays behind. A session isolated to a worktree cannot reach the main checkout, so the Agent leaves the worktree, keeping it, to land the slice.
   - Only the maintainer stages a drafted slice.
     - A slice the Maintainer has staged is accepted, and therefore raised. Git carries who staged it and when.
     - The Agent commits a staged slice as it was staged, without being asked. At the start of a turn it checks `git diff --cached --name-only -- .efforts/`; a staged slice at `ready-for-closure` is closed instead (below).
     - A slice left unstaged is undecided. Not rejected, not forgotten, and not the Agent's to revise or delete on its own
+    - Work on a slice starts only once it is raised. An unstaged draft, or the unstaged part of a rework, is not implemented.
 - Said skill should contain the method of drafting the slice itself, but it *MUST* conform to the template shapes described in [SLICE-TEMPLATE.md](SLICE-TEMPLATE.md)
 - Agents may mark acceptance criteria as "done" themselves whilst informing the Maintainer
   - Agents may question the Maintainer if it believes acceptance criteria is unfulfilled or accidentally marked "done".
