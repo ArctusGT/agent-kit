@@ -1,0 +1,440 @@
+#!/usr/bin/env bash
+# A watch-mostly view of a project's .efforts slices, their blocked-by edges
+# and the agent worktrees working them. Reads only.
+#
+#   .agents/bin/slice-view [PROJECT]
+#
+# Opens on the main checkout of the project the cwd is in, or of PROJECT, in
+# fzf: the deps tree on the left, the line's worktree and slice on the right,
+# or a flow chart of the edges where a line has neither.
+#
+# A space as the first key is the leader, as in lazyvim, and a box lists the
+# keys that follow: ␣gd deps, ␣gb board (by Status), ␣gw worktrees, ␣gr
+# refresh, ␣gg lazygit in the line's worktree (else the main checkout), ␣yy
+# copy the slice's text, ␣yp its path (through tmux, as OSC 52). esc closes
+# the box, backspace steps back. enter reads the slice in nvim; q returns.
+#
+# A worktree links to a slice when its path under .claude/worktrees is the
+# slice's <effort>/<NNN-slug>, and is marked ~ guessed when only the number
+# matches. Where claude-sessions (agent-sidebar) and jq are on PATH, a
+# worktree's line also names the Claude sessions in it and their states.
+#
+# Needs bash 4, git, fzf 0.74, python3, bat, nvim, lazygit and tmux.
+#
+# fzf calls the script back through these, which also draw without fzf:
+#   --list LAYOUT ROOT           the lines of deps, board or worktrees
+#   --preview FILE WORKTREE ROOT the preview; both empty draws the flow chart
+#                                in the order of FZF_PROMPT's layout
+#   --leader ROOT                the fzf actions for FZF_QUERY and FZF_PROMPT
+#   --esc                        esc's action for FZF_PROMPT
+#   --menu KEYS                  the which-key box for the keys after ␣
+#   --read FILE                  the slice in nvim
+usage() {
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+
+case ${1:-} in -h | --help) usage; exit 0 ;; esac
+((BASH_VERSINFO[0] >= 4)) || { echo "slice-view: needs bash 4 or later, found $BASH_VERSION" >&2; exit 1; }
+
+self=$(realpath "$0")
+
+main_checkout() { # $1 a directory in the project
+  local common; common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir) || exit 1
+  echo "${common%/.git}"
+}
+
+# every command the view runs, and fzf new enough for its actions
+check_needs() {
+  local cmd missing=()
+  for cmd in git fzf python3 bat nvim lazygit tmux; do
+    command -v "$cmd" >/dev/null || missing+=("$cmd")
+  done
+  ((${#missing[@]})) && { echo "slice-view: needs ${missing[*]} on PATH" >&2; exit 1; }
+  local have; have=$(fzf --version | cut -d' ' -f1)
+  [[ $(printf '%s\n' 0.74 "$have" | sort -V | head -1) == 0.74 ]] ||
+    { echo "slice-view: needs fzf 0.74 or later, found $have" >&2; exit 1; }
+}
+
+R=$'\e[0m' DIM=$'\e[2m' RED=$'\e[31m' GRN=$'\e[32m' YEL=$'\e[33m' BLU=$'\e[34m' MAG=$'\e[35m' CYN=$'\e[36m'
+
+# every slice as id, status, ticked/total, blockers (space-separated ids) and
+# title, separated by \x1f, which unlike a tab keeps an empty field; id being
+# effort/slug
+slices() { # $1 root
+  local f id
+  for f in "$1"/.efforts/*/*.md; do
+    [[ -f $f ]] || continue
+    id=${f#"$1/.efforts/"}; id=${id%.md}
+    awk -v id="$id" '
+      /^## / && !title {title = substr($0, 4)}
+      /^\*\*Status:\*\*/ {status = $2}
+      /^\*\*blocked-by:\*\*/ {line = $0; sub(/^\*\*blocked-by:\*\* */, "", line); gsub(/[][,]/, " ", line); blockers = line}
+      /^- \[[ x]\]/ {total++; if ($0 ~ /^- \[x\]/) ticked++}
+      END {gsub(/  +/, " ", blockers); sub(/^ /, "", blockers); sub(/ $/, "", blockers)
+           printf "%s\037%s\037%d/%d\037%s\037%s\n", id, status, ticked, total, blockers, title}' "$f"
+  done
+}
+
+# every agent worktree as path<TAB>branch<TAB>locked(0/1)
+worktrees() { # $1 root
+  git -C "$1" worktree list --porcelain | awk -v pre="$1/.claude/worktrees/" '
+    /^worktree / {path = substr($0, 10); branch = ""; locked = 0}
+    /^branch refs\/heads\// {branch = substr($0, 19)}
+    /^locked/ {locked = 1}
+    /^$/ {if (index(path, pre) == 1) print path "\t" branch "\t" locked}
+    END {if (index(path, pre) == 1) print path "\t" branch "\t" locked}' | sort -u
+}
+
+# the slice id worktree $2 works, and how it was found (= exact, ~ guessed);
+# nothing for none
+link_of() { # $1 root, $2 worktree path, $3 slice ids, one per line
+  local rel=${2#"$1/.claude/worktrees/"} num matches
+  grep -qxF "$rel" <<<"$3" && { printf '%s\t=\n' "$rel"; return; }
+  num=${rel##*/}; num=${num%%-*}
+  [[ $num =~ ^[0-9]+$ ]] || return
+  matches=$(grep -E "/${num}-" <<<"$3")
+  [[ -n $matches && $(wc -l <<<"$matches") -eq 1 ]] && printf '%s\t~\n' "$matches"
+}
+
+# the Claude sessions as JSON lines, where agent-sidebar's claude-sessions and
+# jq are there to give and read them; nothing otherwise
+sessions() {
+  command -v claude-sessions >/dev/null && command -v jq >/dev/null && claude-sessions 2>/dev/null
+}
+
+# a worktree's state, coloured: branch, ahead/behind main, dirty, locked, and
+# the state of any Claude session whose cwd is in it
+wt_state() { # $1 root, $2 path, $3 branch, $4 locked, $5 sessions json
+  local ab ahead behind dirty sess= out
+  ab=$(git -C "$1" rev-list --left-right --count "$base...$3" 2>/dev/null)
+  read -r behind ahead <<<"$ab"
+  dirty=$(git -C "$2" status --porcelain 2>/dev/null | wc -l)
+  [[ -n $5 ]] && sess=$(jq -r --arg p "$2" 'select(.cwd == $p or (.cwd | startswith($p + "/"))) | .state' <<<"$5" |
+    sort | uniq -c | awk '{printf "%s%s×%s", sep, $2, $1; sep=" "}')
+  out="${CYN}$3${R} ${GRN}+${ahead:-?}${R}/${RED}-${behind:-?}${R}"
+  ((dirty)) && out+=" ${YEL}*${dirty}${R}"
+  ((${4:-0})) && out+=" ${DIM}locked${R}"
+  [[ -n $sess ]] && out+=" ${MAG}⚙ ${sess}${R}"
+  printf '%s' "$out"
+}
+
+glyph() { # $1 status, $2 has a worktree (0/1)
+  case $1 in
+    ready-for-closure) printf '%s✔%s' "$GRN" "$R" ;;
+    ready-for-human) printf '%s◉%s' "$YEL" "$R" ;;
+    *) if (($2)); then printf '%s◐%s' "$BLU" "$R"; else printf '%s○%s' "$DIM" "$R"; fi ;;
+  esac
+}
+
+# fzf lines: shown<TAB>slice file<TAB>worktree path
+list() { # $1 layout, $2 root
+  local layout=$1 root=$2 sessions ids
+  base=$(git -C "$root" symbolic-ref --short HEAD 2>/dev/null || echo main)
+  sessions=$(sessions)
+  declare -A status ticks blockers title wt_of wt_line
+  local id st tk bl ti
+  while IFS=$'\x1f' read -r id st tk bl ti; do
+    status[$id]=$st ticks[$id]=$tk blockers[$id]=$bl title[$id]=$ti
+  done < <(slices "$root")
+  ids=$(printf '%s\n' "${!status[@]}" | sort)
+  local path branch locked link how unlinked=()
+  while IFS=$'\t' read -r path branch locked; do
+    [[ -n $path ]] || continue
+    IFS=$'\t' read -r link how < <(link_of "$root" "$path" "$ids")
+    local state; state=$(wt_state "$root" "$path" "$branch" "$locked" "$sessions")
+    if [[ -n $link ]]; then
+      wt_of[$link]=$path wt_line[$link]="$([[ $how == '~' ]] && printf '%s~%s ' "$DIM" "$R")$state"
+    else
+      unlinked+=("$path"$'\t'"$state")
+    fi
+  done < <(worktrees "$root")
+
+  # blockers still open (their slice file exists), coloured; closed ones dim
+  open_blockers() { local b out=; for b in ${blockers[$1]}; do
+      if [[ -n ${status[$b]} ]]; then out+=" ${RED}⛔ ${b#*/}${R}"; else out+=" ${DIM}✓ ${b#*/}${R}"; fi
+    done; printf '%s' "$out"; }
+  row() { # $1 id, $2 indent, $3 "bare" to leave its blockers off
+    local id=$1 has=0 bl=; [[ -n ${wt_of[$id]} ]] && has=1
+    [[ $3 == bare ]] || bl=$(open_blockers "$id")
+    printf '%s%s %s %s%s%s%s%s\t%s\t%s\n' "$2" "$(glyph "${status[$id]}" $has)" "$id" \
+      "$DIM" "${ticks[$id]}" "$R" "${wt_line[$id]:+ ${wt_line[$id]}}" "$bl" \
+      "$root/.efforts/$id.md" "${wt_of[$id]}"
+  }
+  heading() { printf '%s── %s ──%s\t\t\n' "$DIM" "$1" "$R"; }
+
+  case $layout in
+    board)
+      local s
+      for s in ready-for-agent ready-for-human ready-for-closure; do
+        heading "$s"
+        for id in $ids; do [[ ${status[$id]} == "$s" ]] && row "$id" "  "; done
+      done
+      heading other
+      for id in $ids; do [[ ${status[$id]} =~ ^ready-for-(agent|human|closure)$ ]] || row "$id" "  "; done ;;
+    deps)
+      # a tree of blocked-by edges: each blocker over the slices naming it.
+      # Roots are the closed blockers (named, but their file gone) and the
+      # slices naming no blocker; a slice with two blockers shows under both
+      blocked_by() { local id b; for id in $ids; do for b in ${blockers[$id]}; do
+          [[ $b == "$1" ]] && echo "$id"; done; done; }
+      draw() { # $1 id, $2 the prefix of the lines under it
+        local kids=() i n
+        mapfile -t kids < <(blocked_by "$1")
+        n=${#kids[@]}
+        for ((i = 0; i < n; i++)); do
+          if ((i == n - 1)); then
+            row "${kids[i]}" "$2${DIM}└──${R} " bare; draw "${kids[i]}" "$2    "
+          else
+            row "${kids[i]}" "$2${DIM}├──${R} " bare; draw "${kids[i]}" "$2${DIM}│${R}   "
+          fi
+        done
+      }
+      local b closed
+      closed=$(for id in $ids; do for b in ${blockers[$id]}; do
+          [[ -n ${status[$b]} ]] || echo "$b"; done; done | sort -u)
+      for b in $closed; do
+        printf '%s✓ %s  closed%s\t\t\n' "$DIM" "$b" "$R"; draw "$b" ""
+      done
+      for id in $ids; do [[ -z ${blockers[$id]} ]] && { row "$id" "" bare; draw "$id" ""; }; done ;;
+    worktrees)
+      heading "worktrees working a slice"
+      for id in $ids; do [[ -n ${wt_of[$id]} ]] && row "$id" "  "; done
+      heading "worktrees with no slice"
+      local u
+      for u in "${unlinked[@]}"; do
+        printf '  %s?%s %s %s\t\t%s\n' "$DIM" "$R" "${u%%$'\t'*}" "${u#*$'\t'}" "${u%%$'\t'*}"
+      done
+      heading "slices with no worktree"
+      for id in $ids; do [[ -z ${wt_of[$id]} ]] && row "$id" "  "; done ;;
+  esac
+}
+
+# git's turned-over graph on stdin redrawn in box lines, as the deps layout
+# draws: each graph character is the directions it joins (/ runs from the
+# column right of it, above, to the one left of it, below), and each cell
+# the box character for the directions it collects. The label, from the first
+# character that is not ASCII, is left as it is
+right_angles() {
+  python3 -c '
+import sys
+U, D, L, R = 1, 2, 4, 8
+box = {U|D: "│", L|R: "─", U|L: "┘", U|R: "└", D|L: "┐", D|R: "┌", U|D|R: "├",
+       U|D|L: "┤", L|R|D: "┬", L|R|U: "┴", U|D|L|R: "┼", U: "│", D: "│", L: "─", R: "─"}
+rows = []
+for line in sys.stdin.read().splitlines():
+    cut = next((i for i, c in enumerate(line) if ord(c) > 127), len(line))
+    graph, label = line[:cut], line[cut:]
+    width = len(graph) + 1
+    dirs, nodes = [0] * width, set()
+    for k, c in enumerate(graph):
+        if c == "|": dirs[k] |= U | D
+        elif c == "*": nodes.add(k)
+        elif c in "-_": dirs[k] |= L | R
+        elif c == chr(39): dirs[k] |= L | U
+        elif c == "/":
+            dirs[k + 1] |= U | L; dirs[k] |= L | R
+            if k: dirs[k - 1] |= R | D
+        elif c == "\\":
+            if k: dirs[k - 1] |= U | R
+            dirs[k] |= L | R; dirs[k + 1] |= L | D
+    rows.append((dirs, nodes, label))
+# git puts no line between a slice and its blocker on the next row of the
+# same column; a row of │ goes there, carrying every line that runs through
+def joins_down(row, k): return k in row[1] or (k < len(row[0]) and row[0][k] & D)
+def joins_up(row, k): return k in row[1] or (k < len(row[0]) and row[0][k] & U)
+for i, (dirs, nodes, label) in enumerate(rows):
+    out = "".join("●" if k in nodes else box.get(d, " ") for k, d in enumerate(dirs))
+    print((out.rstrip() + " " + label.lstrip()).rstrip() if label and out.strip() else (label or out).rstrip())
+    if i + 1 < len(rows) and nodes & rows[i + 1][1]:
+        below = rows[i + 1]
+        width = max(len(dirs), len(below[0]))
+        print("".join("│" if joins_down(rows[i], k) and joins_up(below, k) else " " for k in range(width)).rstrip())
+'
+}
+
+# the blocked-by edges as a flow chart of slice numbers, blockers above what
+# they block, drawn by git: one commit per slice in a throwaway object store,
+# its parents its blockers, so three blockers of one slice meet at it as an
+# octopus merge. git draws children above parents, so the lines are turned
+# over and / swapped with \
+graph() { # $1 root, $2 the layout whose order it follows
+  declare -A status blockers commit
+  local id st tk bl ti b
+  while IFS=$'\x1f' read -r id st tk bl ti; do status[$id]=$st blockers[$id]=$bl; done < <(slices "$1")
+  # every node: the slices, and the closed blockers they name
+  local nodes; nodes=$( { printf '%s\n' "${!status[@]}"; for id in "${!status[@]}"; do
+      printf '%s\n' ${blockers[$id]}; done; } | sort -u)
+  # a number shared by two efforts keeps its effort's initials
+  local dups; dups=$(sed 's#.*/\([0-9]*\)-.*#\1#' <<<"$nodes" | sort | uniq -d)
+  label() { # $1 id
+    local num=${1#*/} g
+    num=${num%%-*}
+    grep -qx "$num" <<<"$dups" && num="$(sed 's/\([a-z]\)[a-z]*-\{0,1\}/\1/g' <<<"${1%%/*}"):$num"
+    case ${status[$1]} in
+      '') g='✓' ;; ready-for-closure) g='✔' ;; ready-for-human) g='◉' ;; *) g='○' ;;
+    esac
+    printf '%s %s' "$g" "$num"
+  }
+  # each node's place in the left pane ($2's list), ten apart; a closed
+  # blocker the layout does not list goes just before the first it blocks
+  declare -A rank
+  local n=0 shown file
+  while IFS=$'\t' read -r shown file _; do
+    if [[ -n $file ]]; then id=${file#"$1/.efforts/"}; id=${id%.md}
+    else id=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$shown" | sed -n 's/^✓ \([^ ]*\)  closed$/\1/p'); fi
+    [[ -n $id && -z ${rank[$id]} ]] && rank[$id]=$(( n += 10 ))
+  done < <(list "$2" "$1")
+  for id in $nodes; do
+    [[ -n ${rank[$id]} ]] && continue
+    local least=999999
+    for b in "${!status[@]}"; do [[ " ${blockers[$b]} " == *" $id "* && ${rank[$b]:-999999} -lt $least ]] && least=${rank[$b]}; done
+    rank[$id]=$((least - 1))
+  done
+  # the throwaway store, set up only now: GIT_DIR would point list's own git
+  # at it
+  local store; store=$(mktemp -d "${TMPDIR:-/tmp}/slice-graph.XXXXXX")
+  export GIT_DIR=$store GIT_AUTHOR_NAME=g GIT_AUTHOR_EMAIL=g@g GIT_COMMITTER_NAME=g GIT_COMMITTER_EMAIL=g@g
+  git init -q --bare "$store"
+  local tree; tree=$(git hash-object -t tree -w /dev/null)
+  make() { # $1 id: its commit, dated by its rank, made after its blockers'
+    [[ -n ${commit[$1]} ]] && return
+    local parents=() b
+    for b in ${blockers[$1]}; do make "$b"; parents+=(-p "${commit[$b]}"); done
+    commit[$1]=$(GIT_COMMITTER_DATE="$((1000000000 + rank[$1])) +0000" GIT_AUTHOR_DATE="$((1000000000 + rank[$1])) +0000" \
+      git commit-tree "$tree" "${parents[@]}" -m "$(label "$1")")
+  }
+  for id in $nodes; do make "$id"; done
+  # the connected groups, each drawn apart: git lays an unrelated commit in
+  # the column a root just left, which reads as an edge that is not there
+  declare -A group
+  local changed=1 g
+  for id in $nodes; do group[$id]=$id; done
+  while ((changed)); do
+    changed=0
+    for id in "${!status[@]}"; do for b in ${blockers[$id]}; do
+      g=${group[$id]}; [[ ${group[$b]} < $g ]] && g=${group[$b]}
+      [[ ${group[$id]} != "$g" || ${group[$b]} != "$g" ]] && { group[$id]=$g group[$b]=$g changed=1; }
+    done; done
+  done
+  echo "blocked-by, top to bottom, in the order of the $2 list (✓ closed ○ open ◉ ready-for-human ✔ ready-for-closure)"
+  # the groups by their first node's rank; within one, git's date order,
+  # which keeps every blocker above what it blocks and otherwise goes by rank
+  local lead members
+  for lead in $(for id in $nodes; do echo "${rank[$id]} ${group[$id]}"; done | sort -n | awk '!seen[$2]++ {print $2}'); do
+    members=()
+    for id in $nodes; do [[ ${group[$id]} == "$lead" ]] && members+=("${commit[$id]}"); done
+    echo
+    git log --graph --date-order --format=%s "${members[@]}" | tac | tr '/\\' '\\/' | sed "s/-\\.\\( *\\)/-'\\1/" | right_angles
+  done
+  rm -rf "$store"
+}
+
+preview() { # $1 slice file, $2 worktree path, $3 root
+  # fzf hands its prompt to the preview, and the prompt names the layout
+  local layout=${FZF_PROMPT%% *}
+  if [[ -z $1 && -z $2 ]]; then graph "$3" "${layout:-deps}"; return; fi
+  if [[ -n $2 ]]; then
+    local branch; branch=$(git -C "$2" branch --show-current)
+    echo "worktree $2  ($branch)"
+    git -C "$2" log --oneline --no-decorate "$(git -C "$3" symbolic-ref --short HEAD 2>/dev/null || echo main)..HEAD" 2>/dev/null | head -8 | sed 's/^/  /'
+    git -C "$2" status --short | head -8 | sed 's/^/  /'
+    echo
+  fi
+  [[ -n $1 && -f $1 ]] && bat --style=plain --color=always --language=md "$1"
+}
+
+# the fzf actions for the query as typed, run on every change: a query
+# starting with a space is the leader, ␣ in the prompt and search paused,
+# until two letters pick an action. The prompt carries the layout shown.
+# The keys that follow show in the preview pane, in a box at its foot, as
+# lazyvim's which-key floats; fzf draws nothing over its own list
+leader() { # $1 root; reads FZF_QUERY and FZF_PROMPT
+  local q=$FZF_QUERY layout=${FZF_PROMPT%% *} to
+  local normal="change-prompt($layout > )+enable-search+change-preview('$self' --preview {2} {3} '$1')"
+  local in="change-prompt($layout ␣ )+disable-search"
+  case $q in
+    '') [[ $FZF_PROMPT == *␣* ]] && echo "$normal" ;;
+    ' ' | ' g' | ' y') echo "$in+change-preview('$self' --menu '${q# }')" ;;
+    # through tmux, whose -w passes the text on as OSC 52 to the terminal
+    # the client is in, across ssh as well
+    ' yy') echo "$normal+clear-query+execute-silent(tmux load-buffer -w {2})" ;;
+    ' yp') echo "$normal+clear-query+execute-silent(printf %s {2} | tmux load-buffer -w -)" ;;
+    ' gg') echo "$normal+clear-query+execute(p={3}; lazygit -p \"\${p:-$1}\")" ;;
+    ' gb' | ' gd' | ' gw' | ' gr')
+      case $q in ' gb') to=board ;; ' gd') to=deps ;; ' gw') to=worktrees ;; *) to=$layout ;; esac
+      echo "$normal+change-prompt($to > )+clear-query+reload('$self' --list $to '$1')" ;;
+    ' '*) echo "$normal+clear-query" ;;
+  esac
+}
+
+# esc in the leader leaves the leader, not the view
+escape() { # reads FZF_PROMPT
+  if [[ $FZF_PROMPT == *␣* ]]; then echo clear-query; else echo abort; fi
+}
+
+# the slice read in nvim: read-only, the mouse on, yanks to the clipboard
+# through OSC 52, q quits
+read_slice() { # $1 slice file
+  nvim -R --cmd "let g:clipboard = 'osc52'" -c 'set mouse=a clipboard=unnamedplus' \
+    -c 'nnoremap q <cmd>q<cr>' "$1"
+}
+
+# the keys that follow the leader and $1, as lazyvim's which-key lists
+# them, in a box as wide as its longest line, at the bottom right of the
+# preview pane (FZF_PREVIEW_LINES and _COLUMNS). In the terminal's own 16
+# colours, so the box takes the terminal's theme as fzf does
+menu() { # $1 the keys typed after the leader so far
+  # widths are counted in characters, which needs a UTF-8 locale
+  LC_ALL=C.UTF-8
+  local B=$'\e[36m' K=$'\e[1m' A=$'\e[2m' G=$'\e[35m' C=$'\e[34m' R=$'\e[0m'
+  local keys=() descs=() key desc width=0 i
+  while IFS=$'\t' read -r key desc; do keys+=("$key") descs+=("$desc"); done < <(menu_lines "$1")
+  # each entry is " k → desc"; the foot " esc close  ⌫ back"
+  for i in "${!keys[@]}"; do
+    (( ${#keys[i]} + ${#descs[i]} + 5 > width )) && width=$(( ${#keys[i]} + ${#descs[i]} + 5 ))
+  done
+  local foot=" esc close  ⌫ back"
+  (( ${#foot} + 1 > width )) && width=$(( ${#foot} + 1 ))
+  local rows=$(( ${#keys[@]} + 3 )) lines=${FZF_PREVIEW_LINES:-0} cols=${FZF_PREVIEW_COLUMNS:-0}
+  local pad=$(( cols - width - 3 )) n
+  (( pad < 0 )) && pad=0
+  for (( n = lines - rows; n > 0; n-- )); do echo; done
+  local left; left=$(printf '%*s' "$pad" '')
+  local rule; rule=$(printf '─%.0s' $(seq "$width"))
+  printf '%s%s╭─ ␣ %s╮%s\n' "$left" "$B" "$(printf '─%.0s' $(seq $((width - 4))))" "$R"
+  for i in "${!keys[@]}"; do
+    key=${keys[i]} desc=${descs[i]}
+    local colour=$C; [[ $desc == +* ]] && colour=$G
+    printf '%s%s│%s %s%s%s %s→%s %s%s%s%*s%s│%s\n' "$left" "$B" "$R" "$K" "$key" "$R" "$A" "$R" \
+      "$colour" "$desc" "$R" $(( width - ${#key} - ${#desc} - 4 )) '' "$B" "$R"
+  done
+  printf '%s%s│%s%s%*s%s│%s\n' "$left" "$B" "$A" "$foot" $(( width - ${#foot} )) '' "$B" "$R"
+  printf '%s%s╰%s╯%s\n' "$left" "$B" "$rule" "$R"
+}
+
+menu_lines() { # $1 as menu's: key<TAB>description, a + leading a group
+  case $1 in
+    '') printf '%s\t%s\n' g '+view' y '+copy' ;;
+    g) printf '%s\t%s\n' d deps b board w worktrees g lazygit r refresh ;;
+    y) printf '%s\t%s\n' y "the slice's text" p 'its path' ;;
+  esac
+}
+
+case ${1:-} in
+  --menu) menu "$2"; exit 0 ;;
+  --list) list "$2" "$3"; exit 0 ;;
+  --preview) preview "$2" "$3" "$4"; exit ;;
+  --leader) leader "$2"; exit 0 ;;
+  --esc) escape; exit 0 ;;
+  --read) read_slice "$2"; exit ;;
+esac
+
+check_needs
+root=$(main_checkout "${1:-.}")
+[[ -d $root/.efforts ]] || { echo "slice-view: $root has no .efforts" >&2; exit 1; }
+list deps "$root" | fzf --ansi --delimiter=$'\t' --with-nth=1 --no-sort --layout=reverse \
+  --prompt='deps > ' --header="slice-view   ␣ keys · enter read" \
+  --preview="'$self' --preview {2} {3} '$root'" --preview-window=right,45%,wrap \
+  --bind="change:transform('$self' --leader '$root')" \
+  --bind="esc:transform('$self' --esc)" \
+  --bind="enter:execute('$self' --read {2})"

@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+# Check bin/slice-view against a fixture project, without fzf: each layout's
+# lines, the flow chart, the worktrees it links, and the leader's actions.
+#
+#   tests/slice-view [--show]
+#
+# Builds a throwaway git project in a temporary directory and removes it
+# after. Its .efforts/fx holds a merge (010 blocked by 001, 002 and 003) and a
+# diamond (020 over 021 and 022 over 023, 021 also blocked by a closed 019).
+# Its worktrees are fx/010-merge (named after its slice), 020-other (only the
+# number) and bold-oak (a generated name), and a stand-in claude-sessions
+# puts one working session in fx/010-merge. Exits non-zero on any mismatch.
+#
+# --show prints what slice-view drew instead of checking it.
+usage() {
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+case ${1:-} in -h | --help) usage; exit 0 ;; esac
+show=0; [[ ${1:-} == --show ]] && show=1
+
+view=$(realpath "$(dirname "$0")/../bin/slice-view")
+t=$(mktemp -d "${TMPDIR:-/tmp}/slice-view-test.XXXXXX"); trap 'rm -rf "$t"' EXIT
+root=$t/project
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+unset GIT_DIR GIT_WORK_TREE
+
+slice() { # $1 slug, $2 status, $3 blockers (space-separated slugs), $4 criteria ticked
+  local bl= b
+  for b in $3; do bl+="${bl:+, }[fx/$b]"; done
+  printf '## %s\n\n**Status:** %s\n**blocked-by:** %s\n\n- [x] one\n- [ ] two\n' "$1" "$2" "$bl" >"$root/.efforts/fx/$1.md"
+  [[ ${4:-1} == 0 ]] && sed -i 's/^- \[x\]/- [ ]/' "$root/.efforts/fx/$1.md"
+}
+mkdir -p "$root/.efforts/fx"
+git init -q -b main "$root"
+slice 001-a ready-for-closure ""
+slice 002-b ready-for-agent "" 0
+slice 003-c ready-for-human ""
+slice 010-merge ready-for-agent "001-a 002-b 003-c"
+slice 020-top ready-for-agent ""
+slice 021-left ready-for-agent "020-top 019-gone"
+slice 022-right ready-for-agent "020-top"
+slice 023-bottom ready-for-agent "021-left 022-right"
+git -C "$root" add .efforts
+git -C "$root" commit -q -m fixture
+wt=$root/.claude/worktrees
+git -C "$root" worktree add -q -b fx/010-merge "$wt/fx/010-merge"
+git -C "$wt/fx/010-merge" commit -q --allow-empty -m ahead
+touch "$wt/fx/010-merge/dirty"
+git -C "$root" worktree add -q -b 020-other "$wt/020-other"
+git -C "$root" worktree add -q -b bold-oak "$wt/bold-oak"
+git -C "$root" worktree lock "$wt/bold-oak"
+
+mkdir "$t/bin"
+printf '#!/bin/sh\necho %s\n' "'{\"cwd\":\"$wt/fx/010-merge\",\"state\":\"working\"}'" >"$t/bin/claude-sessions"
+chmod +x "$t/bin/claude-sessions"
+export PATH=$t/bin:$PATH
+
+plain() { sed 's/\x1b\[[0-9;]*m//g' | sed "s#$view#V#g; s#$t#T#g"; }
+failed=0
+check() { # $1 name, $2 what was drawn; the expected text on stdin
+  local want; want=$(cat)
+  if ((show)); then printf '=== %s\n%s\n' "$1" "$2"; return; fi
+  [[ $2 == "$want" ]] && { echo "ok   $1"; return; }
+  echo "FAIL $1"; diff <(echo "$want") <(echo "$2") | sed 's/^/     /'; failed=1
+}
+shown() { "$view" --list "$1" "$root" | cut -f1 | plain; }
+
+check "deps layout" "$(shown deps)" <<'END'
+✓ fx/019-gone  closed
+└── ○ fx/021-left 1/2
+    └── ○ fx/023-bottom 1/2
+✔ fx/001-a 1/2
+└── ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1
+○ fx/002-b 0/2
+└── ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1
+◉ fx/003-c 1/2
+└── ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1
+◐ fx/020-top 1/2 ~ 020-other +0/-0
+├── ○ fx/021-left 1/2
+│   └── ○ fx/023-bottom 1/2
+└── ○ fx/022-right 1/2
+    └── ○ fx/023-bottom 1/2
+END
+check "board layout" "$(shown board)" <<'END'
+── ready-for-agent ──
+  ○ fx/002-b 0/2
+  ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1 ⛔ 001-a ⛔ 002-b ⛔ 003-c
+  ◐ fx/020-top 1/2 ~ 020-other +0/-0
+  ○ fx/021-left 1/2 ⛔ 020-top ✓ 019-gone
+  ○ fx/022-right 1/2 ⛔ 020-top
+  ○ fx/023-bottom 1/2 ⛔ 021-left ⛔ 022-right
+── ready-for-human ──
+  ◉ fx/003-c 1/2
+── ready-for-closure ──
+  ✔ fx/001-a 1/2
+── other ──
+END
+check "worktrees layout" "$(shown worktrees)" <<'END'
+── worktrees working a slice ──
+  ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1 ⛔ 001-a ⛔ 002-b ⛔ 003-c
+  ◐ fx/020-top 1/2 ~ 020-other +0/-0
+── worktrees with no slice ──
+  ? T/project/.claude/worktrees/bold-oak bold-oak +0/-0 locked
+── slices with no worktree ──
+  ✔ fx/001-a 1/2
+  ○ fx/002-b 0/2
+  ◉ fx/003-c 1/2
+  ○ fx/021-left 1/2 ⛔ 020-top ✓ 019-gone
+  ○ fx/022-right 1/2 ⛔ 020-top
+  ○ fx/023-bottom 1/2 ⛔ 021-left ⛔ 022-right
+END
+check "worktrees layout, files" "$("$view" --list worktrees "$root" | cut -f2,3 | tr '\t' '|' | plain)" <<'END'
+|
+T/project/.efforts/fx/010-merge.md|T/project/.claude/worktrees/fx/010-merge
+T/project/.efforts/fx/020-top.md|T/project/.claude/worktrees/020-other
+|
+|T/project/.claude/worktrees/bold-oak
+|
+T/project/.efforts/fx/001-a.md|
+T/project/.efforts/fx/002-b.md|
+T/project/.efforts/fx/003-c.md|
+T/project/.efforts/fx/021-left.md|
+T/project/.efforts/fx/022-right.md|
+T/project/.efforts/fx/023-bottom.md|
+END
+check "flow chart" "$(FZF_PROMPT='deps > ' "$view" --preview '' '' "$root" | plain)" <<'END'
+blocked-by, top to bottom, in the order of the deps list (✓ closed ○ open ◉ ready-for-human ✔ ready-for-closure)
+
+● ✓ 019
+└─┐
+● │ ○ 020
+├─┤
+│ ├─┐
+├─┼─┘
+● │ ○ 021
+│ ● ○ 022
+├─┘
+● ○ 023
+
+● ✔ 001
+│ ● ○ 002
+│ │ ● ◉ 003
+├─┼─┘
+●─┘ ○ 010
+END
+check "preview of a worktree's slice" "$("$view" --preview "$root/.efforts/fx/010-merge.md" "$wt/fx/010-merge" "$root" | plain | sed 's/^  [0-9a-f]\{7,\} /  SHA /')" <<'END'
+worktree T/project/.claude/worktrees/fx/010-merge  (fx/010-merge)
+  SHA ahead
+  ?? dirty
+
+## 010-merge
+
+**Status:** ready-for-agent
+**blocked-by:** [fx/001-a], [fx/002-b], [fx/003-c]
+
+- [x] one
+- [ ] two
+END
+
+# the leader: each query as typed, from deps, and the fzf actions it gives
+leader() { local q a; for q in "$@"; do
+    a=$(FZF_PROMPT="${prompt:-deps > }" FZF_QUERY=$q "$view" --leader "$root")
+    printf '[%s]%s\n' "$q" "${a:+ $a}"; done; }
+check "leader keys" "$(leader ' ' ' g' ' y' ' gd' ' gb' ' gw' ' gr' ' gg' ' yy' ' yp' ' x' 'abc' | plain)" <<'END'
+[ ] change-prompt(deps ␣ )+disable-search+change-preview('V' --menu '')
+[ g] change-prompt(deps ␣ )+disable-search+change-preview('V' --menu 'g')
+[ y] change-prompt(deps ␣ )+disable-search+change-preview('V' --menu 'y')
+[ gd] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(deps > )+clear-query+reload('V' --list deps 'T/project')
+[ gb] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(board > )+clear-query+reload('V' --list board 'T/project')
+[ gw] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(worktrees > )+clear-query+reload('V' --list worktrees 'T/project')
+[ gr] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(deps > )+clear-query+reload('V' --list deps 'T/project')
+[ gg] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query+execute(p={3}; lazygit -p "${p:-T/project}")
+[ yy] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query+execute-silent(tmux load-buffer -w {2})
+[ yp] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query+execute-silent(printf %s {2} | tmux load-buffer -w -)
+[ x] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query
+[abc]
+END
+check "leader, stepping back to an empty query" "$(prompt='deps ␣ ' leader '' | plain)" <<'END'
+[] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')
+END
+check "esc" "$(printf 'in the leader: %s\nin the list: %s\n' "$(FZF_PROMPT='deps ␣ ' "$view" --esc)" "$(FZF_PROMPT='deps > ' "$view" --esc)")" <<'END'
+in the leader: clear-query
+in the list: abort
+END
+check "which-key box" "$(FZF_PREVIEW_LINES=6 FZF_PREVIEW_COLUMNS=30 "$view" --menu g | plain)" <<'END'
+        ╭─ ␣ ───────────────╮
+        │ d → deps          │
+        │ b → board         │
+        │ w → worktrees     │
+        │ g → lazygit       │
+        │ r → refresh       │
+        │ esc close  ⌫ back │
+        ╰───────────────────╯
+END
+
+mkdir "$t/bare"; git init -q "$t/bare"
+check "a project with no .efforts" "$("$view" "$t/bare" 2>&1 | plain; echo "exit ${PIPESTATUS[0]}")" <<'END'
+slice-view: T/bare has no .efforts
+exit 1
+END
+exit $failed
