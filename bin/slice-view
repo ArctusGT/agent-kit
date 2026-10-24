@@ -41,6 +41,8 @@ case ${1:-} in -h | --help) usage; exit 0 ;; esac
 
 self=$(realpath "$0")
 
+# the main checkout of the project directory $1 is in; where there is none,
+# says the directory is in no git project and returns 1
 main_checkout() { # $1 a directory in the project
   local dir common
   dir=$(cd -- "$1" 2>/dev/null && pwd) || dir=$1
