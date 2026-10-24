@@ -102,6 +102,12 @@ sessions() {
   command -v claude-sessions >/dev/null && command -v jq >/dev/null && claude-sessions 2>/dev/null
 }
 
+# the states of the sessions whose cwd is in a worktree, as "working×1"
+session_tag() { # $1 worktree path, $2 sessions json
+  jq -r --arg p "$1" 'select(.cwd == $p or (.cwd | startswith($p + "/"))) | .state' <<<"$2" |
+    sort | uniq -c | awk '{printf "%s%s×%s", sep, $2, $1; sep=" "}'
+}
+
 # the branch the main checkout is on, which worktrees are counted against
 default_branch() { # $1 root
   git -C "$1" symbolic-ref --short HEAD 2>/dev/null || echo main
@@ -114,8 +120,7 @@ wt_state() { # $1 root, $2 path, $3 branch, $4 locked, $5 sessions json
   ab=$(git -C "$1" rev-list --left-right --count "$(default_branch "$1")...$3" 2>/dev/null)
   read -r behind ahead <<<"$ab"
   dirty=$(git -C "$2" status --porcelain 2>/dev/null | wc -l)
-  [[ -n $5 ]] && sess=$(jq -r --arg p "$2" 'select(.cwd == $p or (.cwd | startswith($p + "/"))) | .state' <<<"$5" |
-    sort | uniq -c | awk '{printf "%s%s×%s", sep, $2, $1; sep=" "}')
+  [[ -n $5 ]] && sess=$(session_tag "$2" "$5")
   out="${CYN}$3${R} ${GRN}+${ahead:-?}${R}/${RED}-${behind:-?}${R}"
   ((dirty)) && out+=" ${YEL}*${dirty}${R}"
   ((${4:-0})) && out+=" ${DIM}locked${R}"
@@ -147,7 +152,8 @@ list() { # $1 layout, $2 root
     IFS=$'\t' read -r link how < <(link_of "$root" "$path" "$ids")
     local state; state=$(wt_state "$root" "$path" "$branch" "$locked" "$sessions")
     if [[ -n $link ]]; then
-      wt_of[$link]=$path wt_line[$link]="$([[ $how == '~' ]] && printf '%s~%s ' "$DIM" "$R")$state"
+      local mark=; [[ $how == '~' ]] && mark="${DIM}~${R} "
+      wt_of[$link]=$path wt_line[$link]=$mark$state
     else
       unlinked+=("$path"$'\t'"$state")
     fi
@@ -182,15 +188,14 @@ list() { # $1 layout, $2 root
       blocked_by() { local id b; for id in $ids; do for b in ${blockers[$id]}; do
           [[ $b == "$1" ]] && echo "$id"; done; done; }
       draw() { # $1 id, $2 the prefix of the lines under it
-        local kids=() i n
+        local kids=() i n elbow rail
         mapfile -t kids < <(blocked_by "$1")
         n=${#kids[@]}
         for ((i = 0; i < n; i++)); do
-          if ((i == n - 1)); then
-            row "${kids[i]}" "$2${DIM}└──${R} " bare; draw "${kids[i]}" "$2    "
-          else
-            row "${kids[i]}" "$2${DIM}├──${R} " bare; draw "${kids[i]}" "$2${DIM}│${R}   "
-          fi
+          elbow='├──' rail="${DIM}│${R}"
+          ((i == n - 1)) && { elbow='└──'; rail=' '; }
+          row "${kids[i]}" "$2${DIM}${elbow}${R} " bare
+          draw "${kids[i]}" "$2${rail}   "
         done
       }
       local b closed
@@ -290,7 +295,10 @@ graph() { # $1 root, $2 the layout whose order it follows
   for id in $nodes; do
     [[ -n ${rank[$id]} ]] && continue
     local least=999999
-    for b in "${!status[@]}"; do [[ " ${blockers[$b]} " == *" $id "* && ${rank[$b]:-999999} -lt $least ]] && least=${rank[$b]}; done
+    for b in "${!status[@]}"; do
+      [[ " ${blockers[$b]} " == *" $id "* ]] || continue
+      (( ${rank[$b]:-999999} < least )) && least=${rank[$b]}
+    done
     rank[$id]=$((least - 1))
   done
   # the throwaway store, set up only now: GIT_DIR would point list's own git
