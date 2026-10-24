@@ -42,9 +42,12 @@ case ${1:-} in -h | --help) usage; exit 0 ;; esac
 self=$(realpath "$0")
 
 main_checkout() { # $1 a directory in the project
-  local common
-  common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) ||
-    { echo "slice-view: $(cd -- "$1" 2>/dev/null && pwd || echo "$1") is in no git project" >&2; return 1; }
+  local dir common
+  dir=$(cd -- "$1" 2>/dev/null && pwd) || dir=$1
+  common=$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || {
+    echo "slice-view: $dir is in no git project" >&2
+    return 1
+  }
   echo "${common%/.git}"
 }
 
