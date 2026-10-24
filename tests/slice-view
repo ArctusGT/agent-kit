@@ -11,6 +11,9 @@
 # number) and bold-oak (a generated name), and a stand-in claude-sessions
 # puts one working session in fx/010-merge. Exits non-zero on any mismatch.
 #
+# Needs git, python3, bat and jq; fzf is not run. The project is made under
+# TMPDIR (default /tmp).
+#
 # --show prints what slice-view drew instead of checking it.
 usage() {
   awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"

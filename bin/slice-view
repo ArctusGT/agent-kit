@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # A watch-mostly view of a project's .efforts slices, their blocked-by edges
-# and the agent worktrees working them. Reads only.
+# and the agent worktrees working them. Changes nothing in the project: ␣yy
+# and ␣yp write the clipboard, and ␣gg hands over to lazygit, where acting is.
 #
 #   .agents/bin/slice-view [PROJECT]
 #
@@ -19,7 +20,8 @@
 # matches. Where claude-sessions (agent-sidebar) and jq are on PATH, a
 # worktree's line also names the Claude sessions in it and their states.
 #
-# Needs bash 4, git, fzf 0.74, python3, bat, nvim, lazygit and tmux.
+# Needs bash 4, git, fzf 0.74, python3, bat, nvim, lazygit and tmux. The flow
+# chart's throwaway git store goes under TMPDIR (default /tmp).
 #
 # fzf calls the script back through these, which also draw without fzf:
 #   --list LAYOUT ROOT           the lines of deps, board or worktrees
@@ -27,7 +29,8 @@
 #                                in the order of FZF_PROMPT's layout
 #   --leader ROOT                the fzf actions for FZF_QUERY and FZF_PROMPT
 #   --esc                        esc's action for FZF_PROMPT
-#   --menu KEYS                  the which-key box for the keys after ␣
+#   --menu KEYS                  the which-key box for the keys after ␣, at
+#                                the foot of FZF_PREVIEW_LINES and _COLUMNS
 #   --read FILE                  the slice in nvim
 usage() {
   awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
@@ -104,7 +107,7 @@ sessions() {
 
 # the states of the sessions whose cwd is in a worktree, as "working×1"
 session_tag() { # $1 worktree path, $2 sessions json
-  jq -r --arg p "$1" 'select(.cwd == $p or (.cwd | startswith($p + "/"))) | .state' <<<"$2" |
+  jq -r --arg p "$1" '(.cwd // "") as $c | select($c == $p or ($c | startswith($p + "/"))) | .state' <<<"$2" |
     sort | uniq -c | awk '{printf "%s%s×%s", sep, $2, $1; sep=" "}'
 }
 
