@@ -203,4 +203,9 @@ check "a project with no .efforts" "$("$view" "$t/bare" 2>&1 | plain; echo "exit
 slice-view: T/bare has no .efforts
 exit 1
 END
+mkdir "$t/nogit"
+check "a directory in no git project" "$("$view" "$t/nogit" 2>&1 | plain; echo "exit ${PIPESTATUS[0]}")" <<'END'
+slice-view: T/nogit is in no git project
+exit 1
+END
 exit $failed

@@ -42,7 +42,9 @@ case ${1:-} in -h | --help) usage; exit 0 ;; esac
 self=$(realpath "$0")
 
 main_checkout() { # $1 a directory in the project
-  local common; common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir) || exit 1
+  local common
+  common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) ||
+    { echo "slice-view: $(cd -- "$1" 2>/dev/null && pwd || echo "$1") is in no git project" >&2; return 1; }
   echo "${common%/.git}"
 }
 
@@ -453,7 +455,7 @@ case ${1:-} in
 esac
 
 check_needs
-root=$(main_checkout "${1:-.}")
+root=$(main_checkout "${1:-.}") || exit 1
 [[ -d $root/.efforts ]] || { echo "slice-view: $root has no .efforts" >&2; exit 1; }
 list deps "$root" | fzf --ansi --delimiter=$'\t' --with-nth=1 --no-sort --layout=reverse \
   --prompt='deps > ' --header="slice-view   ␣ keys · enter read" \
