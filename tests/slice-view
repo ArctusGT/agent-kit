@@ -25,10 +25,10 @@ export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER
 unset GIT_DIR GIT_WORK_TREE
 
 slice() { # $1 slug, $2 status, $3 blockers (space-separated slugs), $4 criteria ticked
-  local bl= b
+  local bl= b tick=x
   for b in $3; do bl+="${bl:+, }[fx/$b]"; done
-  printf '## %s\n\n**Status:** %s\n**blocked-by:** %s\n\n- [x] one\n- [ ] two\n' "$1" "$2" "$bl" >"$root/.efforts/fx/$1.md"
-  [[ ${4:-1} == 0 ]] && sed -i 's/^- \[x\]/- [ ]/' "$root/.efforts/fx/$1.md"
+  [[ ${4:-1} == 0 ]] && tick=' '
+  printf '## %s\n\n**Status:** %s\n**blocked-by:** %s\n\n- [%s] one\n- [ ] two\n' "$1" "$2" "$bl" "$tick" >"$root/.efforts/fx/$1.md"
 }
 mkdir -p "$root/.efforts/fx"
 git init -q -b main "$root"

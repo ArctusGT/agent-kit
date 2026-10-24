@@ -102,11 +102,16 @@ sessions() {
   command -v claude-sessions >/dev/null && command -v jq >/dev/null && claude-sessions 2>/dev/null
 }
 
+# the branch the main checkout is on, which worktrees are counted against
+default_branch() { # $1 root
+  git -C "$1" symbolic-ref --short HEAD 2>/dev/null || echo main
+}
+
 # a worktree's state, coloured: branch, ahead/behind main, dirty, locked, and
 # the state of any Claude session whose cwd is in it
 wt_state() { # $1 root, $2 path, $3 branch, $4 locked, $5 sessions json
   local ab ahead behind dirty sess= out
-  ab=$(git -C "$1" rev-list --left-right --count "$base...$3" 2>/dev/null)
+  ab=$(git -C "$1" rev-list --left-right --count "$(default_branch "$1")...$3" 2>/dev/null)
   read -r behind ahead <<<"$ab"
   dirty=$(git -C "$2" status --porcelain 2>/dev/null | wc -l)
   [[ -n $5 ]] && sess=$(jq -r --arg p "$2" 'select(.cwd == $p or (.cwd | startswith($p + "/"))) | .state' <<<"$5" |
@@ -129,7 +134,6 @@ glyph() { # $1 status, $2 has a worktree (0/1)
 # fzf lines: shown<TAB>slice file<TAB>worktree path
 list() { # $1 layout, $2 root
   local layout=$1 root=$2 sessions ids
-  base=$(git -C "$root" symbolic-ref --short HEAD 2>/dev/null || echo main)
   sessions=$(sessions)
   declare -A status ticks blockers title wt_of wt_line
   local id st tk bl ti
@@ -156,11 +160,11 @@ list() { # $1 layout, $2 root
   row() { # $1 id, $2 indent, $3 "bare" to leave its blockers off
     local id=$1 has=0 bl=; [[ -n ${wt_of[$id]} ]] && has=1
     [[ $3 == bare ]] || bl=$(open_blockers "$id")
-    printf '%s%s %s %s%s%s%s%s\t%s\t%s\n' "$2" "$(glyph "${status[$id]}" $has)" "$id" \
+    printf '%s%s %s %s%s%s%s%s\t%s\t%s\t%s\n' "$2" "$(glyph "${status[$id]}" $has)" "$id" \
       "$DIM" "${ticks[$id]}" "$R" "${wt_line[$id]:+ ${wt_line[$id]}}" "$bl" \
-      "$root/.efforts/$id.md" "${wt_of[$id]}"
+      "$root/.efforts/$id.md" "${wt_of[$id]}" "$id"
   }
-  heading() { printf '%s── %s ──%s\t\t\n' "$DIM" "$1" "$R"; }
+  heading() { printf '%s── %s ──%s\t\t\t\n' "$DIM" "$1" "$R"; }
 
   case $layout in
     board)
@@ -193,7 +197,7 @@ list() { # $1 layout, $2 root
       closed=$(for id in $ids; do for b in ${blockers[$id]}; do
           [[ -n ${status[$b]} ]] || echo "$b"; done; done | sort -u)
       for b in $closed; do
-        printf '%s✓ %s  closed%s\t\t\n' "$DIM" "$b" "$R"; draw "$b" ""
+        printf '%s✓ %s  closed%s\t\t\t%s\n' "$DIM" "$b" "$R" "$b"; draw "$b" ""
       done
       for id in $ids; do [[ -z ${blockers[$id]} ]] && { row "$id" "" bare; draw "$id" ""; }; done ;;
     worktrees)
@@ -202,7 +206,7 @@ list() { # $1 layout, $2 root
       heading "worktrees with no slice"
       local u
       for u in "${unlinked[@]}"; do
-        printf '  %s?%s %s %s\t\t%s\n' "$DIM" "$R" "${u%%$'\t'*}" "${u#*$'\t'}" "${u%%$'\t'*}"
+        printf '  %s?%s %s %s\t\t%s\t\n' "$DIM" "$R" "${u%%$'\t'*}" "${u#*$'\t'}" "${u%%$'\t'*}"
       done
       heading "slices with no worktree"
       for id in $ids; do [[ -z ${wt_of[$id]} ]] && row "$id" "  "; done ;;
@@ -278,10 +282,9 @@ graph() { # $1 root, $2 the layout whose order it follows
   # each node's place in the left pane ($2's list), ten apart; a closed
   # blocker the layout does not list goes just before the first it blocks
   declare -A rank
-  local n=0 shown file
-  while IFS=$'\t' read -r shown file _; do
-    if [[ -n $file ]]; then id=${file#"$1/.efforts/"}; id=${id%.md}
-    else id=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$shown" | sed -n 's/^✓ \([^ ]*\)  closed$/\1/p'); fi
+  local n=0 line
+  while IFS= read -r line; do
+    id=${line##*$'\t'}
     [[ -n $id && -z ${rank[$id]} ]] && rank[$id]=$(( n += 10 ))
   done < <(list "$2" "$1")
   for id in $nodes; do
@@ -324,7 +327,10 @@ graph() { # $1 root, $2 the layout whose order it follows
     members=()
     for id in $nodes; do [[ ${group[$id]} == "$lead" ]] && members+=("${commit[$id]}"); done
     echo
-    git log --graph --date-order --format=%s "${members[@]}" | tac | tr '/\\' '\\/' | sed "s/-\\.\\( *\\)/-'\\1/" | right_angles
+    # turned over by awk, as macOS has no tac; git's octopus marker -. then
+    # opens downward, so it becomes -'
+    git log --graph --date-order --format=%s "${members[@]}" | awk '{l[NR] = $0} END {for (i = NR; i; i--) print l[i]}' |
+      tr '/\\' '\\/' | sed "s/-\\.\\( *\\)/-'\\1/" | right_angles
   done
   rm -rf "$store"
 }
@@ -336,7 +342,7 @@ preview() { # $1 slice file, $2 worktree path, $3 root
   if [[ -n $2 ]]; then
     local branch; branch=$(git -C "$2" branch --show-current)
     echo "worktree $2  ($branch)"
-    git -C "$2" log --oneline --no-decorate "$(git -C "$3" symbolic-ref --short HEAD 2>/dev/null || echo main)..HEAD" 2>/dev/null | head -8 | sed 's/^/  /'
+    git -C "$2" log --oneline --no-decorate "$(default_branch "$3")..HEAD" 2>/dev/null | head -8 | sed 's/^/  /'
     git -C "$2" status --short | head -8 | sed 's/^/  /'
     echo
   fi
@@ -374,7 +380,8 @@ escape() { # reads FZF_PROMPT
 
 # the slice read in nvim: read-only, the mouse on, yanks to the clipboard
 # through OSC 52, q quits
-read_slice() { # $1 slice file
+read_slice() { # $1 slice file, empty on a heading or a closed blocker
+  [[ -n $1 ]] || return
   nvim -R --cmd "let g:clipboard = 'osc52'" -c 'set mouse=a clipboard=unnamedplus' \
     -c 'nnoremap q <cmd>q<cr>' "$1"
 }
