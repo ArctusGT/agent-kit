@@ -20,6 +20,8 @@ import sys
 from collections import defaultdict, namedtuple
 from functools import partial
 
+# the arms of a cell, the directions its line leaves it in; a cell is drawn as
+# the box character for the arms it collects
 U, D, L, R = 1, 2, 4, 8
 box = {U|D: "│", L|R: "─", U|L: "┘", U|R: "└", D|L: "┐", D|R: "┌", U|D|R: "├",
        U|D|L: "┤", L|R|D: "┬", L|R|U: "┴", U|D|L|R: "┼", U: "│", D: "│", L: "─", R: "─"}
@@ -328,7 +330,7 @@ def drawn(seg, m, s):
     return turn(seg, m, s)
 
 
-def fix(fixed, r, t, k, p, arms):
+def fix_cell(fixed, r, t, k, p, arms):
     fixed[(r, t, k)].append((p, arms))
 
 
@@ -338,16 +340,16 @@ def fixed_cells(g, chains, pieces, owned):
     fixed = defaultdict(list)
     for (r, k) in g.verts - owned:
         for t in range(SUB):
-            fix(fixed, r, t, k, ("v", (r, k)), U | D)
+            fix_cell(fixed, r, t, k, ("v", (r, k)), U | D)
     for c, n in g.legs.items():
         arms = (L | R) if g.at(*c) == "-" else (L | U)
         if (c[0] - 1, c[1]) in g.verts or any(g.end_cell(ch) == c for ch in chains):
             arms |= U
-        fix(fixed, c[0], 0, c[1], ("n", n), arms)
+        fix_cell(fixed, c[0], 0, c[1], ("n", n), arms)
     for (r, k) in g.nodes:
         if pieces.succ.get(("n", (r, k))):
             for t in range(1, SUB):
-                fix(fixed, r, t, k, ("t", (r, k)), U | D)
+                fix_cell(fixed, r, t, k, ("t", (r, k)), U | D)
     return fixed
 
 
@@ -446,6 +448,7 @@ class Search:
         return extra, added, merges
 
     def lift(self, m, added, merges):
+        """undo place: take back the cells it drew and its merges"""
         for c in added:
             self.grid[c].pop()
         for _ in range(merges):
@@ -458,6 +461,9 @@ class Search:
         return self.best_cost is not None and (cost >= self.best_cost or self.steps < 0)
 
     def descend(self, n, cost, chosen):
+        """choose a place for the n-th segment of the order, then go on to the
+        next: its choices are priced alone and tried cheapest first, and a
+        drawing of every segment better than the best so far becomes the best"""
         self.steps -= 1
         if self.beaten(cost):
             return
@@ -495,6 +501,8 @@ Row = namedtuple("Row", "text label slices arms")
 
 
 def printed_rows(g, dirs, split):
+    """the rows to print, git's row r as split[r] of them, each cell drawn from
+    the arms in dirs, keyed (row, sub-row, column)"""
     width = {r: len(g.graphs[r]) for r in range(g.H)}
     for c in dirs:
         width[c[0]] = max(width[c[0]], c[2] + 1)
@@ -530,6 +538,8 @@ def render(g, fixed, segments, chosen):
     # same column; a row of │ goes there, carrying every line that runs through
     for row, nxt in zip(rows, rows[1:] + [Row("", "", {}, {})]):
         text, label = row.text, row.label
+        # the label follows its row's drawing after one space; a row with no
+        # drawing, or no label, prints as the one it has
         print((text.rstrip() + " " + label.lstrip()).rstrip() if label and text.strip() else (label or text).rstrip())
         stacked = {k for k, s in row.slices.items() if k in nxt.slices and (("n", s), ("n", nxt.slices[k])) in g.edges}
         if stacked:
