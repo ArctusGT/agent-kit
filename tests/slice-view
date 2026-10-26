@@ -232,46 +232,53 @@ slice-view: T/nogit is in no git project
 exit 1
 END
 
-# a group git spreads across several columns, which it moves a line along as
-# a staircase of diagonals: 005 joins in left of the chain 001 to 004, and
-# 001's line and 004's both step right past it
+# SSCI-WHS's pcb-milling-ra group, its edges as they are there: git spreads it
+# across six columns, and draws 008's five blockers and 007's three as a
+# staircase of diagonals
 steps=$t/steps
-mkdir -p "$steps/.efforts/st"
+mkdir -p "$steps/.efforts/pcb-milling-ra"
 git init -q -b main "$steps"
 step() { # $1 slug, $2 blockers (space-separated slugs)
   local bl= b
-  for b in $2; do bl+="${bl:+, }[st/$b]"; done
-  printf '## %s\n\n**Status:** ready-for-agent\n**blocked-by:** %s\n' "$1" "$bl" >"$steps/.efforts/st/$1.md"
+  for b in $2; do bl+="${bl:+, }[pcb-milling-ra/$b]"; done
+  printf '## %s\n\n**Status:** ready-for-agent\n**blocked-by:** %s\n' "$1" "$bl" >"$steps/.efforts/pcb-milling-ra/$1.md"
 }
-step 001-a ""
-step 002-b "001-a"
-step 003-c "002-b"
-step 004-d "003-c"
-step 005-e ""
-step 006-f "005-e"
-step 007-g "006-f 004-d"
-step 012-h "005-e 006-f"
-step 008-i "012-h 001-a"
+step 001-site-walk-down-existing-controls ""
+step 002-chemical-inventory ""
+step 003-rating-plates-and-labels ""
+step 004-header-and-scheduling-decisions ""
+step 005-makera-enquiry-draft ""
+step 006-ecu-laser-radiation-arrangements ""
+step 012-obtain-standards-ecu-library ""
+step 007-laser-eyewear-od-assessment "005-makera-enquiry-draft 006-ecu-laser-radiation-arrangements 012-obtain-standards-ecu-library"
+step 008-update-ra-with-findings "001-site-walk-down-existing-controls 002-chemical-inventory 003-rating-plates-and-labels 004-header-and-scheduling-decisions 005-makera-enquiry-draft"
+step 009-assessment-team-review "008-update-ra-with-findings"
+step 011-riskware-entry-and-approval "007-laser-eyewear-od-assessment 009-assessment-team-review"
 git -C "$steps" add .efforts
 git -C "$steps" commit -q -m fixture
-check "flow chart, a staircase" "$("$view" --chart deps "$steps" | plain | sed -n '/●/,$p')" <<'END'
+check "flow chart, pcb-milling-ra" "$("$view" --chart deps "$steps" | plain | sed -n '/●/,$p')" <<'END'
 ● ○ 001
-├─┐
 │ ● ○ 002
+│ │ ● ○ 003
+│ │ │ ● ○ 004
+└─┼─┼─┼─┐
+● │ │ │ │ ○ 005
+├─┼─┼─┼─┼─┐
+│ │ │ │ │ │
+│ ├─┼─┼─┘ │
+│ │ │ │ ┌─┘
+│ ●─┴─┴─┘ ○ 008
 │ │
-│ ● ○ 003
-│ │
-│ ● ○ 004
-└─┼─┐
-● └─┼─┐ ○ 005
-├─┐ │ │
-│ ● │ │ ○ 006
-│ │ │ │
-│ │ │ │
-│ ├─┼─● ○ 007
-│ │ │
-●─┘ │ ○ 012
-├───┘
-● ○ 008
+│ ● ○ 009
+│ └───┐
+│ ●   │ ○ 006
+│ │   │
+│ │ ● │ ○ 012
+├─┼─┘ │
+●─┘   │ ○ 007
+├─────┘
+│
+│
+● ○ 011
 END
 exit $failed
