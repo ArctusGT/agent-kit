@@ -232,9 +232,8 @@ slice-view: T/nogit is in no git project
 exit 1
 END
 
-# SSCI-WHS's pcb-milling-ra group, its edges as they are there: git spreads it
-# across six columns, and draws 008's five blockers and 007's three as a
-# staircase of diagonals
+# the pcb-milling-ra group, its blocked-by edges as they are in its project: a
+# group git spreads across many columns and draws as a staircase of diagonals
 steps=$t/steps
 mkdir -p "$steps/.efforts/pcb-milling-ra"
 git init -q -b main "$steps"
