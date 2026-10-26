@@ -1,21 +1,5 @@
 """slice-view's chart redrawn square: git's turned-over graph of one group on
-stdin, box characters out.
-
-Each input line is git's graph, then, on a slice's line, its commit and its
-blockers' commits between two \\x1f, then its label, which is printed as it
-is. The blocked-by edges come from those commits, not from the graph.
-
-git moves a line sideways one column a row, as a run of diagonals: a
-staircase, a crossing over a lane (a diagonal either side of its |), a jump
-along a row of _, a step out and back. Each run is one line between two
-columns, drawn as a vertical, one horizontal and a vertical, its turn put in
-whichever of its rows reads right; a row splits into as many as three where
-two turns cannot share it. Lines that share a cell other than by crossing
-read as joined, so every slice such a net carries a line from must block
-every slice it carries one to. The turns are chosen by a search that weighs,
-in order: such false joins, rows borrowed from a line's own lane or a
-slice's row, split rows, crossings.
-"""
+stdin, box characters out; main says how."""
 import sys
 from collections import defaultdict, namedtuple
 from functools import partial
@@ -548,6 +532,21 @@ def render(g, fixed, segments, chosen):
 
 
 def main():
+    """Each input line is git's graph, then, on a slice's line, its commit
+    and its blockers' commits between two \\x1f, then its label, which is
+    printed as it is. The blocked-by edges come from those commits, not
+    from the graph.
+
+    git moves a line sideways one column a row, as a run of diagonals: a
+    staircase, a crossing over a lane (a diagonal either side of its |), a
+    jump along a row of _, a step out and back. Each run is one line between
+    two columns, drawn as a vertical, one horizontal and a vertical, its turn
+    put in whichever of its rows reads right; a row splits into as many as
+    three where two turns cannot share it. Lines that share a cell other
+    than by crossing read as joined, so every slice such a net carries a
+    line from must block every slice it carries one to. The turns are chosen
+    by a search that weighs, in order: such false joins, rows borrowed from
+    a line's own lane or a slice's row, split rows, crossings."""
     g = parse(sys.stdin.read())
     chains = find_chains(g)
     pieces = Pieces(g, chains)
