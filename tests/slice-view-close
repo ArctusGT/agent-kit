@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Check that Ctrl-C in either pane of bin/slice-view closes the whole view,
+# and leaves no slice-view-* tmux server or socket.
+#
+#   tests/slice-view-close
+#
+# Opens the view in a tmux of a throwaway server, under its own TMUX_TMPDIR,
+# so its sockets are the only ones there; sends C-c to the chart pane, then to
+# fzf, in a fresh view each time. Exits non-zero on any failure.
+#
+# Needs what slice-view needs (git, fzf, python3, bat, nvim, lazygit, tmux).
+# Everything is made under TMPDIR (default /tmp) and removed after.
+usage() {
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+case ${1:-} in -h | --help) usage; exit 0 ;; esac
+
+view=$(realpath "$(dirname "$0")/../bin/slice-view")
+t=$(mktemp -d "${TMPDIR:-/tmp}/slice-view-close.XXXXXX")
+export TMUX_TMPDIR=$t/tmux
+mkdir "$TMUX_TMPDIR"
+trap 'tmux -L outer kill-server 2>/dev/null; rm -rf "$t"' EXIT
+unset TMUX TMUX_PANE GIT_DIR GIT_WORK_TREE
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+
+root=$t/project
+mkdir -p "$root/.efforts/fx"
+printf '## a\n\n**Status:** ready-for-agent\n**blocked-by:**\n\n- [ ] one\n' >"$root/.efforts/fx/001-a.md"
+git init -q -b main "$root"
+git -C "$root" add .efforts
+git -C "$root" commit -q -m fixture
+
+sockets() { find "$TMUX_TMPDIR" -name 'slice-view-*' 2>/dev/null; }
+until_true() { # $1 seconds; the condition is the rest
+  local n=$(($1 * 10)); shift
+  while ((n-- > 0)); do "$@" && return 0; sleep 0.1; done
+  return 1
+}
+inner() { sockets | head -1 | sed 's#.*/##'; }
+has_two_panes() { [[ $(tmux -L "$(inner)" list-panes 2>/dev/null | wc -l) -eq 2 ]]; }
+no_sockets() { [[ -z $(sockets) ]]; }
+
+failed=0
+check() { # $1 which pane takes C-c, $2 its index in the view
+  local name=$1 pane=$2 server
+  tmux -L outer new-session -d -x 120 -y 30 "'$view' '$root'; sleep 30"
+  if ! until_true 10 has_two_panes; then
+    echo "FAIL C-c to $name: the view did not open"; failed=1; tmux -L outer kill-server; return
+  fi
+  sleep 1 # the chart's first draw and fzf's start
+  server=$(inner)
+  tmux -L "$server" send-keys -t "$pane" C-c
+  if until_true 5 no_sockets; then
+    echo "ok   C-c to $name closes the whole view, nothing left"
+  else
+    echo "FAIL C-c to $name: left $(sockets | wc -l) socket(s), panes: $(tmux -L "$server" list-panes 2>&1 | wc -l)"
+    failed=1
+  fi
+  tmux -L "$server" kill-server 2>/dev/null
+  tmux -L outer kill-server 2>/dev/null
+  rm -f "$TMUX_TMPDIR"/*/slice-view-*
+}
+# the chart's pane is on the left, fzf's on the right
+check "the chart pane" 0
+check "fzf" 1
+exit $failed

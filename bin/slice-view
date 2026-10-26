@@ -33,7 +33,7 @@
 #   --chart LAYOUT ROOT          the flow chart, in the order of LAYOUT's lines
 #   --chart-pane ROOT            the chart's pane: the chart boxed, redrawn
 #                                when SLICE_VIEW_LAYOUT gains a line and every
-#                                10 seconds
+#                                10 seconds; Ctrl-C closes the whole view
 #   --leader ROOT                the fzf actions for FZF_QUERY and FZF_PROMPT
 #   --esc                        esc's action for FZF_PROMPT
 #   --menu KEYS                  the which-key box for the keys after ␣, at
@@ -489,6 +489,8 @@ print("└" + "─" * width + "┘", end="")' "$1" "$2" "$3"
 chart_pane() { # $1 root
   # the box's width is counted in characters, which needs a UTF-8 locale
   local LC_ALL=C.UTF-8 seen=-1 now drawn=0 box top
+  # Ctrl-C here closes the whole view, as in fzf, not this pane alone
+  trap 'tmux kill-server' INT
   while :; do
     now=$(wc -l <"$SLICE_VIEW_LAYOUT")
     if (( now != seen || SECONDS - drawn >= 10 )); then
