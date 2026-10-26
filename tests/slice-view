@@ -254,7 +254,7 @@ step 012-h "005-e 006-f"
 step 008-i "012-h 001-a"
 git -C "$steps" add .efforts
 git -C "$steps" commit -q -m fixture
-check "flow chart, a staircase" "$("$view" --chart deps "$steps" | plain | sed '1,8d')" <<'END'
+check "flow chart, a staircase" "$("$view" --chart deps "$steps" | plain | sed -n '/●/,$p')" <<'END'
 ● ○ 001
 ├─┐
 │ ● ○ 002

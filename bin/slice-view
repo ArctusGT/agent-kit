@@ -330,7 +330,8 @@ graph() { # $1 root, $2 the layout whose order it follows
     # each slice's line carries its commit and its blockers' between two
     # \x1f, for right_angles to know the edges by. Turned over by awk, as
     # macOS has no tac; git's octopus marker -. then opens downward, so it
-    # becomes -'
+    # becomes -'. The swaps run over whole lines, as the commits and labels
+    # hold no / \ or -.
     git log --graph --date-order --format='%x1f%h %p%x1f%s' "${members[@]}" | awk '{l[NR] = $0} END {for (i = NR; i; i--) print l[i]}' |
       tr '/\\' '\\/' | sed "s/-\\.\\( *\\)/-'\\1/" | right_angles
   done
