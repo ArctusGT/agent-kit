@@ -39,7 +39,7 @@ grill-with-docs → to-spec → to-slices → implement → code-review
 - Slices are one file per slice at `.efforts/<effort>/<NNN>-<slug>.md`
   - where `NNN` is append-only, non repeating number from `001`
   - never multiple slices combined into one file
-- A worktree working a slice is named after it, `<effort>/<NNN-slug>`: its path under the worktrees directory mirrors the slice's under `.efforts`, and its branch is `worktree-<effort>/<NNN-slug>`. This is the link between a slice and the worktree working it. Nothing enforces it; a worktree with any other name is made as before.
+- Name a worktree working a slice after it, `<effort>/<NNN-slug>`: its path under the worktrees directory mirrors the slice's under `.efforts`, and its branch is `worktree-<effort>/<NNN-slug>`. This is the link between a slice and the worktree working it. Nothing enforces it; a worktree with any other name is made as before.
 
 ## Creating specs
 
