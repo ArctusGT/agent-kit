@@ -9,7 +9,8 @@
 # diamond (020 over 021 and 022 over 023, 021 also blocked by a closed 019).
 # Its worktrees are fx/010-merge (named after its slice), 020-other (only the
 # number) and bold-oak (a generated name), and a stand-in claude-sessions
-# puts one working session in fx/010-merge. Exits non-zero on any mismatch.
+# puts one working session in fx/010-merge, whose id is highlighted. Exits
+# non-zero on any mismatch.
 #
 # Needs git, python3, bat and jq; fzf is not run. The project is made under
 # TMPDIR (default /tmp).
@@ -75,11 +76,11 @@ check "deps layout" "$(shown deps)" <<'END'
 └── ○ fx/021-left 1/2
     └── ○ fx/023-bottom 1/2
 ✔ fx/001-a 1/2
-└── ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1
+└── ◐  fx/010-merge  1/2 fx/010-merge +1/-0 *1 ⚙ working×1
 ○ fx/002-b 0/2
-└── ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1
+└── ◐  fx/010-merge  1/2 fx/010-merge +1/-0 *1 ⚙ working×1
 ◉ fx/003-c 1/2
-└── ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1
+└── ◐  fx/010-merge  1/2 fx/010-merge +1/-0 *1 ⚙ working×1
 ◐ fx/020-top 1/2 ~ 020-other +0/-0
 ├── ○ fx/021-left 1/2
 │   └── ○ fx/023-bottom 1/2
@@ -89,7 +90,7 @@ END
 check "board layout" "$(shown board)" <<'END'
 ── ready-for-agent ──
   ○ fx/002-b 0/2
-  ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1 ⛔ 001-a ⛔ 002-b ⛔ 003-c
+  ◐  fx/010-merge  1/2 fx/010-merge +1/-0 *1 ⚙ working×1 ⛔ 001-a ⛔ 002-b ⛔ 003-c
   ◐ fx/020-top 1/2 ~ 020-other +0/-0
   ○ fx/021-left 1/2 ⛔ 020-top ✓ 019-gone
   ○ fx/022-right 1/2 ⛔ 020-top
@@ -102,7 +103,7 @@ check "board layout" "$(shown board)" <<'END'
 END
 check "worktrees layout" "$(shown worktrees)" <<'END'
 ── worktrees working a slice ──
-  ◐ fx/010-merge 1/2 fx/010-merge +1/-0 *1 ⚙ working×1 ⛔ 001-a ⛔ 002-b ⛔ 003-c
+  ◐  fx/010-merge  1/2 fx/010-merge +1/-0 *1 ⚙ working×1 ⛔ 001-a ⛔ 002-b ⛔ 003-c
   ◐ fx/020-top 1/2 ~ 020-other +0/-0
 ── worktrees with no slice ──
   ? T/project/.claude/worktrees/bold-oak bold-oak +0/-0 locked
@@ -128,8 +129,14 @@ T/project/.efforts/fx/021-left.md|
 T/project/.efforts/fx/022-right.md|
 T/project/.efforts/fx/023-bottom.md|
 END
-check "flow chart" "$(FZF_PROMPT='deps > ' "$view" --preview '' '' "$root" | plain)" <<'END'
-blocked-by, top to bottom, in the order of the deps list (✓ closed ○ open ◉ ready-for-human ✔ ready-for-closure)
+check "flow chart" "$("$view" --chart deps "$root" | plain)" <<'END'
+blocked-by ↓
+deps order
+✓ closed
+○ open
+◉ human
+✔ closure
+ working 
 
 ● ✓ 019
 └─┐
@@ -146,7 +153,18 @@ blocked-by, top to bottom, in the order of the deps list (✓ closed ○ open �
 │ ● ○ 002
 │ │ ● ◉ 003
 ├─┼─┘
-●─┘ ○ 010
+●─┘ ○  010 
+END
+check "a heading previews nothing" "$("$view" --preview '' '' "$root")" <<'END'
+END
+# the colour plain strips: the id of the slice a working session is on, in
+# the list (under each of its three blockers) and in the chart
+hl=$'\e[1;30;45m'
+check "a working session's slice is highlighted" "$(
+  printf 'list %s\nchart %s\n' "$("$view" --list deps "$root" | grep -cF "$hl fx/010-merge ")" \
+    "$("$view" --chart deps "$root" | grep -cF "$hl 010 ")")" <<'END'
+list 3
+chart 1
 END
 check "preview of a worktree's slice" "$("$view" --preview "$root/.efforts/fx/010-merge.md" "$wt/fx/010-merge" "$root" | plain | sed 's/^  [0-9a-f]\{7,\} /  SHA /')" <<'END'
 worktree T/project/.claude/worktrees/fx/010-merge  (fx/010-merge)
@@ -170,13 +188,13 @@ check "leader keys" "$(leader ' ' ' g' ' y' ' gd' ' gb' ' gw' ' gr' ' gg' ' yy' 
 [ ] change-prompt(deps ␣ )+disable-search+change-preview('V' --menu '')
 [ g] change-prompt(deps ␣ )+disable-search+change-preview('V' --menu 'g')
 [ y] change-prompt(deps ␣ )+disable-search+change-preview('V' --menu 'y')
-[ gd] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(deps > )+clear-query+reload('V' --list deps 'T/project')
-[ gb] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(board > )+clear-query+reload('V' --list board 'T/project')
-[ gw] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(worktrees > )+clear-query+reload('V' --list worktrees 'T/project')
-[ gr] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(deps > )+clear-query+reload('V' --list deps 'T/project')
+[ gd] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(deps > )+change-list-label( Slices · deps )+clear-query+reload('V' --list deps 'T/project')
+[ gb] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(board > )+change-list-label( Slices · board )+clear-query+reload('V' --list board 'T/project')
+[ gw] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(worktrees > )+change-list-label( Slices · worktrees )+clear-query+reload('V' --list worktrees 'T/project')
+[ gr] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+change-prompt(deps > )+change-list-label( Slices · deps )+clear-query+reload('V' --list deps 'T/project')
 [ gg] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query+execute(p={3}; lazygit -p "${p:-T/project}")
-[ yy] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query+execute-silent(tmux load-buffer -w {2})
-[ yp] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query+execute-silent(printf %s {2} | tmux load-buffer -w -)
+[ yy] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query+execute-silent(TMUX="$SLICE_VIEW_TMUX" tmux load-buffer -w {2})
+[ yp] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query+execute-silent(printf %s {2} | TMUX="$SLICE_VIEW_TMUX" tmux load-buffer -w -)
 [ x] change-prompt(deps > )+enable-search+change-preview('V' --preview {2} {3} 'T/project')+clear-query
 [abc]
 END
@@ -188,14 +206,14 @@ in the leader: clear-query
 in the list: abort
 END
 check "which-key box" "$(FZF_PREVIEW_LINES=6 FZF_PREVIEW_COLUMNS=30 "$view" --menu g | plain)" <<'END'
-        ╭─ ␣ ───────────────╮
+        ┌─ ␣ ───────────────┐
         │ d → deps          │
         │ b → board         │
         │ w → worktrees     │
         │ g → lazygit       │
         │ r → refresh       │
         │ esc close  ⌫ back │
-        ╰───────────────────╯
+        └───────────────────┘
 END
 
 mkdir "$t/bare"; git init -q "$t/bare"
