@@ -13,7 +13,10 @@
 # puts one working session in fx/010-merge, whose id is highlighted. Exits
 # non-zero on any mismatch.
 #
-# Needs git, python3, bat and jq; fzf is not run. The project is made under
+# tests/slice-view-close runs first, for Ctrl-C in the view's panes.
+#
+# Needs git, python3, bat and jq; fzf is not run, apart from
+# slice-view-close's, which needs what the view needs. The project is made under
 # TMPDIR (default /tmp).
 #
 # --show prints what slice-view drew instead of checking it.
@@ -67,6 +70,8 @@ export PATH=$t/bin:$PATH
 # expected text holds on any host
 plain() { sed 's/\x1b\[[0-9;]*m//g' | sed "s#$view#V#g; s#$t#T#g"; }
 failed=0
+# the view's Ctrl-C, driven in a tmux of its own, is checked apart
+((show)) || "$(dirname "$0")/slice-view-close" || failed=1
 check() { # $1 name, $2 what was drawn; the expected text on stdin
   local want; want=$(cat)
   if ((show)); then printf '=== %s\n%s\n' "$1" "$2"; return; fi

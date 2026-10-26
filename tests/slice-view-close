@@ -44,21 +44,22 @@ failed=0
 check() { # $1 which pane takes C-c, $2 its index in the view
   local name=$1 pane=$2 server
   tmux -L outer new-session -d -x 120 -y 30 "'$view' '$root'; sleep 30"
-  if ! until_true 10 has_two_panes; then
-    echo "FAIL C-c to $name: the view did not open"; failed=1; tmux -L outer kill-server; return
-  fi
-  sleep 1 # the chart's first draw and fzf's start
-  server=$(inner)
-  tmux -L "$server" send-keys -t "$pane" C-c
-  if until_true 5 no_sockets; then
-    echo "ok   C-c to $name closes the whole view, nothing left"
+  if until_true 10 has_two_panes; then
+    sleep 1 # the chart's first draw and fzf's start
+    server=$(inner)
+    tmux -L "$server" send-keys -t "$pane" C-c
+    if until_true 5 no_sockets; then
+      echo "ok   C-c to $name closes the whole view, nothing left"
+    else
+      echo "FAIL C-c to $name: left $(sockets | wc -l) socket(s)"; failed=1
+    fi
   else
-    echo "FAIL C-c to $name: left $(sockets | wc -l) socket(s), panes: $(tmux -L "$server" list-panes 2>&1 | wc -l)"
-    failed=1
+    echo "FAIL C-c to $name: the view did not open"; failed=1
   fi
-  tmux -L "$server" kill-server 2>/dev/null
+  # every path ends here, so no server outlives the case
+  [[ -n $(sockets) ]] && tmux -L "$(inner)" kill-server 2>/dev/null
   tmux -L outer kill-server 2>/dev/null
-  rm -f "$TMUX_TMPDIR"/*/slice-view-*
+  sockets | xargs -r rm -f
 }
 # the chart's pane is on the left, fzf's on the right
 check "the chart pane" 0
