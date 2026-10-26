@@ -245,48 +245,10 @@ list() { # $1 layout, $2 root
   esac
 }
 
-# git's turned-over graph on stdin redrawn in box lines, as the deps layout
-# draws: each graph character is the directions it joins (/ runs from the
-# column right of it, above, to the one left of it, below), and each cell
-# the box character for the directions it collects. The label, from the first
-# character that is not ASCII, is left as it is
-right_angles() {
-  python3 -c '
-import sys
-U, D, L, R = 1, 2, 4, 8
-box = {U|D: "│", L|R: "─", U|L: "┘", U|R: "└", D|L: "┐", D|R: "┌", U|D|R: "├",
-       U|D|L: "┤", L|R|D: "┬", L|R|U: "┴", U|D|L|R: "┼", U: "│", D: "│", L: "─", R: "─"}
-rows = []
-for line in sys.stdin.read().splitlines():
-    cut = next((i for i, c in enumerate(line) if ord(c) > 127), len(line))
-    graph, label = line[:cut], line[cut:]
-    width = len(graph) + 1
-    dirs, nodes = [0] * width, set()
-    for k, c in enumerate(graph):
-        if c == "|": dirs[k] |= U | D
-        elif c == "*": nodes.add(k)
-        elif c in "-_": dirs[k] |= L | R
-        elif c == chr(39): dirs[k] |= L | U
-        elif c == "/":
-            dirs[k + 1] |= U | L; dirs[k] |= L | R
-            if k: dirs[k - 1] |= R | D
-        elif c == "\\":
-            if k: dirs[k - 1] |= U | R
-            dirs[k] |= L | R; dirs[k + 1] |= L | D
-    rows.append((dirs, nodes, label))
-# git puts no line between a slice and its blocker on the next row of the
-# same column; a row of │ goes there, carrying every line that runs through
-def joins_down(row, k): return k in row[1] or (k < len(row[0]) and row[0][k] & D)
-def joins_up(row, k): return k in row[1] or (k < len(row[0]) and row[0][k] & U)
-for i, (dirs, nodes, label) in enumerate(rows):
-    out = "".join("●" if k in nodes else box.get(d, " ") for k, d in enumerate(dirs))
-    print((out.rstrip() + " " + label.lstrip()).rstrip() if label and out.strip() else (label or out).rstrip())
-    if i + 1 < len(rows) and nodes & rows[i + 1][1]:
-        below = rows[i + 1]
-        width = max(len(dirs), len(below[0]))
-        print("".join("│" if joins_down(rows[i], k) and joins_up(below, k) else " " for k in range(width)).rstrip())
-'
-}
+# git's turned-over graph of one group on stdin, each slice's line carrying
+# its commit and its blockers', redrawn square in box lines; see
+# slice-view-right-angles.py
+right_angles() { python3 "${self%/*}/slice-view-right-angles.py"; }
 
 # the blocked-by edges as a flow chart of slice numbers, blockers above what
 # they block, drawn by git: one commit per slice in a throwaway object store,
@@ -365,9 +327,11 @@ graph() { # $1 root, $2 the layout whose order it follows
     members=()
     for id in $nodes; do [[ ${group[$id]} == "$lead" ]] && members+=("${commit[$id]}"); done
     echo
-    # turned over by awk, as macOS has no tac; git's octopus marker -. then
-    # opens downward, so it becomes -'
-    git log --graph --date-order --format=%s "${members[@]}" | awk '{l[NR] = $0} END {for (i = NR; i; i--) print l[i]}' |
+    # each slice's line carries its commit and its blockers' between two
+    # \x1f, for right_angles to know the edges by. Turned over by awk, as
+    # macOS has no tac; git's octopus marker -. then opens downward, so it
+    # becomes -'
+    git log --graph --date-order --format='%x1f%h %p%x1f%s' "${members[@]}" | awk '{l[NR] = $0} END {for (i = NR; i; i--) print l[i]}' |
       tr '/\\' '\\/' | sed "s/-\\.\\( *\\)/-'\\1/" | right_angles
   done
   rm -rf "$store"

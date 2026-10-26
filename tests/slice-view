@@ -10,8 +10,9 @@
 # 022 with prose after its blocker).
 # Its worktrees are fx/010-merge (named after its slice), 020-other (only the
 # number) and bold-oak (a generated name), and a stand-in claude-sessions
-# puts one working session in fx/010-merge, whose id is highlighted. Exits
-# non-zero on any mismatch.
+# puts one working session in fx/010-merge, whose id is highlighted. A
+# second project holds only a group git draws across several columns, for
+# the chart. Exits non-zero on any mismatch.
 #
 # Needs git, python3, bat and jq; fzf is not run. The project is made under
 # TMPDIR (default /tmp).
@@ -145,10 +146,10 @@ deps order
 ● ✓ 019
 └─┐
 ● │ ○ 020
-├─┤
-│ ├─┐
-├─┼─┘
-● │ ○ 021
+├─┼─┐
+│ │ │
+├─┘ │
+● ┌─┘ ○ 021
 │ ● ○ 022
 ├─┘
 ● ○ 023
@@ -229,5 +230,48 @@ mkdir "$t/nogit"
 check "a directory in no git project" "$("$view" "$t/nogit" 2>&1 | plain; echo "exit ${PIPESTATUS[0]}")" <<'END'
 slice-view: T/nogit is in no git project
 exit 1
+END
+
+# a group git spreads across several columns, which it moves a line along as
+# a staircase of diagonals: 005 joins in left of the chain 001 to 004, and
+# 001's line and 004's both step right past it
+steps=$t/steps
+mkdir -p "$steps/.efforts/st"
+git init -q -b main "$steps"
+step() { # $1 slug, $2 blockers (space-separated slugs)
+  local bl= b
+  for b in $2; do bl+="${bl:+, }[st/$b]"; done
+  printf '## %s\n\n**Status:** ready-for-agent\n**blocked-by:** %s\n' "$1" "$bl" >"$steps/.efforts/st/$1.md"
+}
+step 001-a ""
+step 002-b "001-a"
+step 003-c "002-b"
+step 004-d "003-c"
+step 005-e ""
+step 006-f "005-e"
+step 007-g "006-f 004-d"
+step 012-h "005-e 006-f"
+step 008-i "012-h 001-a"
+git -C "$steps" add .efforts
+git -C "$steps" commit -q -m fixture
+check "flow chart, a staircase" "$("$view" --chart deps "$steps" | plain | sed '1,8d')" <<'END'
+● ○ 001
+├─┐
+│ ● ○ 002
+│ │
+│ ● ○ 003
+│ │
+│ ● ○ 004
+└─┼─┐
+● └─┼─┐ ○ 005
+├─┐ │ │
+│ ● │ │ ○ 006
+│ │ │ │
+│ │ │ │
+│ ├─┼─● ○ 007
+│ │ │
+●─┘ │ ○ 012
+├───┘
+● ○ 008
 END
 exit $failed
