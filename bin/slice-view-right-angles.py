@@ -17,7 +17,7 @@ in order: such false joins, rows borrowed from a line's own lane or a
 slice's row, split rows, crossings.
 """
 import sys
-import time
+from collections import namedtuple
 
 U, D, L, R = 1, 2, 4, 8
 box = {U|D: "│", L|R: "─", U|L: "┘", U|R: "└", D|L: "┐", D|R: "┌", U|D|R: "├",
@@ -25,6 +25,7 @@ box = {U|D: "│", L|R: "─", U|L: "┘", U|R: "└", D|L: "┐", D|R: "┌", U
 arms_of = {c: a for a, c in box.items() if a not in (U, D, L, R)}
 SUB = 3  # the most rows one of git's rows becomes
 FALSE_JOIN, BORROWED, SPLIT, CROSSING = 1000, 30, 50, 1
+STEPS = 5000  # how long the search goes on bettering a drawing
 
 graphs, labels, commits = [], [], {}
 for r, line in enumerate(sys.stdin.read().splitlines()):
@@ -352,16 +353,18 @@ def put(grid, c, p, arms):
 
 
 # the search: segments top down, each one's choices cheapest first, so the
-# first drawing found is the greedy one; a dense group then has a second to
-# better it
+# first drawing found is the greedy one; a dense group then has STEPS more
+# steps of the search to better it, a count rather than a time so that one
+# group draws the same on any host
 order = sorted(range(len(segments)), key=lambda i: (segments[i]["span"][0], segments[i]["from"]))
 best = [None, {}]
 depth = {}  # row: the sub-rows the turns placed in it use
-deadline = time.monotonic() + 1.0
+steps = [STEPS]
 
 
 def search(n, grid, cost, chosen):
-    if best[0] is not None and (cost >= best[0] or time.monotonic() > deadline):
+    steps[0] -= 1
+    if best[0] is not None and (cost >= best[0] or steps[0] < 0):
         return
     if n == len(order):
         best[0], best[1] = cost, dict(chosen)
@@ -418,13 +421,16 @@ for i, (m, s) in best[1].items():
     for c, arms in drawn(segments[i], m, s):
         dirs[c] = dirs.get(c, 0) | arms
 
-out = []  # each printed row: its text, its label, {column: the slice there}
+# a printed row: its box characters, its label, and {column: slice} for the
+# slices on it
+Row = namedtuple("Row", "text label slices")
+out = []
 for r in range(H):
     width = max([len(graphs[r])] + [c[2] + 1 for c in dirs if c[0] == r])
     for t in range(split[r]):
         text = "".join("●" if t == 0 and (r, k) in nodes else box.get(dirs.get((r, t, k), 0), " ")
                        for k in range(width))
-        out.append((text, labels[r] if t == 0 else "", {k: (r, k) for k in range(width) if t == 0 and (r, k) in nodes}))
+        out.append(Row(text, labels[r] if t == 0 else "", {k: (r, k) for k in range(width) if t == 0 and (r, k) in nodes}))
 
 
 def arm(text, k, a):
@@ -433,10 +439,10 @@ def arm(text, k, a):
 
 # git puts no line between a slice and its blocker on the next row of the
 # same column; a row of │ goes there, carrying every line that runs through
-for i, (text, label, here) in enumerate(out):
+for row, nxt in zip(out, out[1:] + [Row("", "", {})]):
+    text, label = row.text, row.label
     print((text.rstrip() + " " + label.lstrip()).rstrip() if label and text.strip() else (label or text).rstrip())
-    nxt, there = out[i + 1][0::2] if i + 1 < len(out) else ("", {})
-    stacked = {k for k in here if k in there and (("n", here[k]), ("n", there[k])) in edges}
+    stacked = {k for k, s in row.slices.items() if k in nxt.slices and (("n", s), ("n", nxt.slices[k])) in edges}
     if stacked:
-        print("".join("│" if k in stacked or (arm(text, k, D) and arm(nxt, k, U)) else " "
-                      for k in range(max(len(text), len(nxt)))).rstrip())
+        print("".join("│" if k in stacked or (arm(text, k, D) and arm(nxt.text, k, U)) else " "
+                      for k in range(max(len(text), len(nxt.text)))).rstrip())
