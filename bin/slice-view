@@ -87,7 +87,10 @@ slices() { # $1 root
     awk -v id="$id" '
       /^## / && !title {title = substr($0, 4)}
       /^\*\*Status:\*\*/ {status = $2}
-      /^\*\*blocked-by:\*\*/ {line = $0; sub(/^\*\*blocked-by:\*\* */, "", line); gsub(/[][,]/, " ", line); blockers = line}
+      # each [effort/slug] on the line; prose around them names no slice. The
+      # id is spelt out by its characters, as awks differ on [^]]
+      /^\*\*blocked-by:\*\*/ {line = $0
+        while (match(line, /\[[A-Za-z0-9._\/-]+\]/)) {blockers = blockers " " substr(line, RSTART + 1, RLENGTH - 2); line = substr(line, RSTART + RLENGTH)}}
       /^- \[[ x]\]/ {total++; if ($0 ~ /^- \[x\]/) ticked++}
       END {gsub(/  +/, " ", blockers); sub(/^ /, "", blockers); sub(/ $/, "", blockers)
            printf "%s\037%s\037%d/%d\037%s\037%s\n", id, status, ticked, total, blockers, title}' "$f"

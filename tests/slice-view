@@ -6,7 +6,8 @@
 #
 # Builds a throwaway git project in a temporary directory and removes it
 # after. Its .efforts/fx holds a merge (010 blocked by 001, 002 and 003) and a
-# diamond (020 over 021 and 022 over 023, 021 also blocked by a closed 019).
+# diamond (020 over 021 and 022 over 023, 021 also blocked by a closed 019,
+# 022 with prose after its blocker).
 # Its worktrees are fx/010-merge (named after its slice), 020-other (only the
 # number) and bold-oak (a generated name), and a stand-in claude-sessions
 # puts one working session in fx/010-merge, whose id is highlighted. Exits
@@ -44,6 +45,9 @@ slice 020-top ready-for-agent ""
 slice 021-left ready-for-agent "020-top 019-gone"
 slice 022-right ready-for-agent "020-top"
 slice 023-bottom ready-for-agent "021-left 022-right"
+# prose after a blocker, which names no slice and draws as none
+sed -i.bak 's#^\*\*blocked-by:\*\* \[fx/020-top\]$#& (once the jig is in, not before)#' "$root/.efforts/fx/022-right.md"
+rm "$root/.efforts/fx/022-right.md.bak"
 git -C "$root" add .efforts
 git -C "$root" commit -q -m fixture
 wt=$root/.claude/worktrees
