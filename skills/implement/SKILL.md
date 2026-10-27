@@ -74,7 +74,7 @@ Proof is evidence you observed yourself in this session: command output, a repro
 
 - Reproduce the original failure, apply the fix, then watch the same reproduction pass.
 - Run any checks the repo's CI runs.
-- Add one focused test that fails without the fix, where the behaviour has none and the repo has a test setup.
+- Add one focused test that fails without the fix, where no test covers the behaviour yet and the repo has a test setup.
 - For UI and runtime behaviour, run the app, code or service and look at the change. Green mocked tests do not prove the user experience works. Put screenshots in the scratchpad.
 
 ## Ask the Maintainer
