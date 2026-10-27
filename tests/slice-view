@@ -14,10 +14,14 @@
 # second project holds only a group git draws across several columns, for
 # the chart. Exits non-zero on any mismatch.
 #
-# Needs git, python3, bat and jq; fzf is not run. The project is made under
-# TMPDIR (default /tmp).
+# tests/slice-view-close runs first, for Ctrl-C in the view's panes.
 #
-# --show prints what slice-view drew instead of checking it.
+# Needs git, python3, bat and jq; fzf is not run here. slice-view-close runs
+# the view itself, so it also needs fzf, nvim, lazygit and tmux. The project is
+# made under TMPDIR (default /tmp).
+#
+# --show prints what slice-view drew instead of checking it, and skips
+# slice-view-close.
 usage() {
   awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
 }
@@ -68,6 +72,8 @@ export PATH=$t/bin:$PATH
 # expected text holds on any host
 plain() { sed 's/\x1b\[[0-9;]*m//g' | sed "s#$view#V#g; s#$t#T#g"; }
 failed=0
+# the view's Ctrl-C, driven in a tmux of its own, is checked apart
+((show)) || "$(dirname "$0")/slice-view-close" || failed=1
 check() { # $1 name, $2 what was drawn; the expected text on stdin
   local want; want=$(cat)
   if ((show)); then printf '=== %s\n%s\n' "$1" "$2"; return; fi
