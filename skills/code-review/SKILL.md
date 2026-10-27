@@ -31,8 +31,8 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 A plain directory at `.agents` has no `160000` entry, so it reads as empty. Then:
 
 1. If either is empty, or `kit_old` equals `kit_new`, there is no kit range: review the project alone.
-2. Otherwise capture the kit's range beside the project's own: `git -C .agents diff $kit_old...$kit_new`, with commits from `git -C .agents log $kit_old..$kit_new --oneline`.
-3. If a pointer is missing from the local kit (`git -C .agents cat-file -e <sha>`), fetch once with `git -C .agents fetch`. If it is still missing, note it for the final report in step 5 and go on with the project's diff alone.
+2. Otherwise make sure both pointers are in the local kit (`git -C .agents cat-file -e <sha>`). If one is missing, fetch once with `git -C .agents fetch`. If it is still missing, note it for the final report in step 5 and go on with the project's diff alone.
+3. Capture the kit's range beside the project's own: `git -C .agents diff $kit_old...$kit_new`, with commits from `git -C .agents log $kit_old..$kit_new --oneline`.
 
 ### 2. Identify the spec source
 
