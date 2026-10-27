@@ -22,13 +22,13 @@ Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so th
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
 
-**The kit's range.** Where the work lives in `.agents`, the project's diff is a submodule pointer and nothing of the work. Read the pointer at each end:
+**The kit's range.** Where the work lives in `.agents`, the project's diff is a submodule pointer and nothing of the work. Read the pointer at each end, as the gitlink's commit (mode `160000`):
 
     base=$(git merge-base <fixed-point> HEAD)
-    old=$(git rev-parse $base:.agents)
-    new=$(git rev-parse HEAD:.agents)
+    old=$(git ls-tree $base .agents | awk '$1 == 160000 {print $3}')
+    new=$(git ls-tree HEAD .agents | awk '$1 == 160000 {print $3}')
 
-If they are equal, or `.agents` is not a submodule here, there is no kit range: review the project alone. Otherwise the kit's range is `git -C .agents diff $old...$new`, with commits from `git -C .agents log $old..$new --oneline`, and it is captured beside the project's own. A pointer missing from the local kit (`git -C .agents cat-file -e <sha>`) is fetched once with `git -C .agents fetch`. If it is still missing, say so in the report and go on with the project's diff alone.
+If either is empty, or they are equal, there is no kit range: review the project alone. Otherwise the kit's range is `git -C .agents diff $old...$new`, with commits from `git -C .agents log $old..$new --oneline`, and it is captured beside the project's own. A pointer missing from the local kit (`git -C .agents cat-file -e <sha>`) is fetched once with `git -C .agents fetch`. If it is still missing, say so in the report and go on with the project's diff alone.
 
 ### 2. Identify the spec source
 
