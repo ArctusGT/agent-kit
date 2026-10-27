@@ -65,7 +65,7 @@ A round is one `code-review` run; passes 1–3 run once, before round 1. Round 1
 ## Landing
 
 1. **Set the Status.** The implementing sub-agent sets the slice's Status for what it waits on, in the last commit, whose message ends `Reviewed in <N> rounds, by <model>`, naming the model the session noted for `code-review`:
-   - Any criterion marked `**Maintainer:**` is unticked: `ready-for-human`, as the tracker's Closing slices says. The rounds have already run, and the Agent ticks that criterion afterwards on the Maintainer's report, with no second review.
+   - Any criterion marked `**Maintainer:**` is unticked: `ready-for-human`, as the tracker's Closing slices says. The rounds have already run; the tracker's Closing slices says who ticks it afterwards, on the Maintainer's report, with no second review.
    - **Every criterion is ticked**: `ready-for-closure`. Closing it waits on the Maintainer's word in the conversation.
 2. **Land.** The session lands the slice's branch with `.agents/bin/land` from the project's main checkout, without asking. A branch at `ready-for-human` lands too, so the Maintainer's check runs on main.
 

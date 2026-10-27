@@ -74,7 +74,7 @@ Said skill should contain the method of drafting the slice itself, but it *MUST*
 ### Staying on track
 
 - The agent may present or maintain a scratchpad of acceptance criteria or specific human tasks it thinks the Maintainer is yet to address during the course of an individual chat. This is ephemeral, discarded at the end of a chat or the beginning of a new chat.
-- Agents may tick unmarked acceptance criteria themselves whilst informing the Maintainer; a criterion marked `**Maintainer:**` is ticked only once the Maintainer reports it met
+- Agents may tick unmarked acceptance criteria themselves whilst informing the Maintainer; a criterion marked `**Maintainer:**` is ticked only once the Maintainer reports it met.
 - Agents may question the Maintainer if it believes acceptance criteria is unfulfilled or accidentally marked "done".
 
 ## Closing slices
