@@ -81,7 +81,7 @@ Said skill should contain the method of drafting the slice itself, but it *MUST*
 
 Closed slices are retained only in git. The code base is representative of work done.
 
-- The Status is `ready-for-human` while a criterion waits on the Maintainer, such as a converge or a live observation, and `ready-for-closure` once every criterion is ticked. `implement` says how the slice is reviewed before either is set, and when the branch lands.
+- The Status is `ready-for-human` while a criterion marked `**Maintainer:**` is unticked (see [SLICE-TEMPLATE.md](SLICE-TEMPLATE.md)), and `ready-for-closure` once every criterion is ticked. `implement` says how the slice is reviewed before either is set, and when the branch lands.
 - **The Maintainer's word to close a `ready-for-closure` slice is the confirmation to close it**
   - Agents remind the Maintainer which slices are waiting.
   - The Agent deletes the file and commits the deletion, with the commit message naming the instruction.
