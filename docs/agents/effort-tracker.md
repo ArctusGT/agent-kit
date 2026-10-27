@@ -78,7 +78,7 @@ Closed slices are retained only in git. The code base is representative of work 
 - Once every acceptance criterion is ticked and a `code-review` run leaves no finding unfixed and unnamed, the implementing Agent sets the Status to `ready-for-closure`
   - The Maintainer reads it, and says in the conversation to close it. Agents remind the Maintainer which slices are waiting.
 - **The Maintainer's word to close a `ready-for-closure` slice is the confirmation to close it**
-  - The Agent deletes the file and commits the deletion, with the commit message naming the instruction. The Agent lands a worktree's branch with `bin/land` when the Maintainer says so, or as part of closing its slice. A slice with every criterion ticked is closed by its branch's own close commit, and one still waiting on a live check is closed on main afterwards.
+  - The Agent deletes the file and commits the deletion, with the commit message naming the instruction. The Agent lands a worktree's branch with `bin/land` once its `code-review` is done and its Status set, without asking. The slice is then closed on main, on the Maintainer's word.
   - The closing commit is the record, since git is the only place the slice survives: what the slice delivered, and anything named in it for the Maintainer that is still open.
   - The effort directory and spec may remain unless the maintainer instructs the agent to remove it
 

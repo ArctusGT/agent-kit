@@ -12,7 +12,8 @@ When the Maintainer says to implement a `ready-for-agent` slice:
 1. Make the worktree named after the slice, `<effort>/<NNN-slug>` (where the project has a WorktreeCreate hook, the hook makes it), and start a sub-agent that runs the sub-agent section of this skill, giving it the worktree's path to work in by absolute path. Worktree isolation takes no name, so the sub-agent does not make the worktree.
 2. When the sub-agent reports, start a separate sub-agent to run /code-review on the slice's commits, and wait for its report. Never run the review yourself.
 3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context. Wait for its report that the fixes are committed, then start a new `code-review` sub-agent. Repeat until the tracker's rule on when `code-review` runs says it is done, then tell the implementing sub-agent to set the Status in its last commit.
-4. Report to the Maintainer: what was committed, each review's findings, and what waits on the Maintainer. Landing and closing wait on the Maintainer's word.
+4. Land the slice's branch with `bin/land`, without asking. A branch at `ready-for-human` lands too, so the Maintainer's check runs on main.
+5. Report to the Maintainer: what was committed and landed, each review's findings, and what waits on the Maintainer. Closing waits on the Maintainer's word.
 
 ## The sub-agent working a slice
 
