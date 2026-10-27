@@ -33,8 +33,8 @@ The agent needs to know when it's done. Every agent brief must have concrete, te
 ### Criteria name who checks them
 
 A criterion only the Maintainer can check, such as a converge or a live
-observation, starts with `**Maintainer:**`. An unmarked criterion is the
-Agent's. The Agent reads who checks a criterion from the mark, never from its
+observation, starts with `**Maintainer:**`; the drafter marks every such
+criterion, since an unmarked criterion is the Agent's to tick. The Agent reads who checks a criterion from the mark, never from its
 wording, and never ticks a marked one until the Maintainer reports it met.
 
 ### Explicit scope boundaries
