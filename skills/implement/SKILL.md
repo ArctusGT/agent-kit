@@ -14,13 +14,13 @@ Implement with a sub-agent -> Review passes, each in a new sub-agent -> Repeat i
 
 When the Maintainer says to implement a `ready-for-agent` slice:
 
-1. Make the worktree named after the slice, `<effort>/<NNN-slug>`, and start a sub-agent in it that runs the sub-agent section of this skill, giving it the worktree's absolute path. Where the project has a WorktreeCreate hook, the hook makes the worktree.
+1. Make the worktree named after the slice, `<effort>/<NNN-slug>`, by running the project's WorktreeCreate hook with the name, or else `git worktree add .claude/worktrees/<effort>/<NNN-slug> -b worktree-<effort>/<NNN-slug>`, and start a sub-agent that runs the sub-agent section of this skill, giving it the worktree's absolute path.
 2. When the sub-agent reports passes 1–3 done, start a new sub-agent to run /code-review on the slice's commits, and wait for its report. Never run a review yourself. Record every pass's findings in the ledger (see `Passes`).
 3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context. Wait for its report that the fixes are committed, then run the next round or end the rounds, as `Rounds` says.
 4. When the rounds end, tell the implementing sub-agent to set the Status, and wait for its report that it is committed.
 5. Land the slice's branch, as `Landing` says.
 6. Report to the Maintainer: what was committed and landed, each round's findings, and what waits on the Maintainer. Closing waits on the Maintainer's word.
-7. Name any other `ready-for-agent` slices that could run next, each with its own sub-agent: beside this one where they touch different files, after it where they touch the same ones.
+7. Name any other `ready-for-agent` slices the Maintainer could have implemented next: beside this one where they touch different files, after it where they touch the same ones.
 
 When the implementing sub-agent hands up a question, put it to the Maintainer as `Ask the Maintainer` says, and send the answer back with SendMessage.
 
