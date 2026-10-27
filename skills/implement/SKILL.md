@@ -14,10 +14,10 @@ Implement with a sub-agent -> Review passes, each in a new sub-agent -> Repeat i
 
 When the Maintainer says to implement a `ready-for-agent` slice:
 
-1. Make the worktree named after the slice, `<effort>/<NNN-slug>`, by running the project's WorktreeCreate hook with the name, or else `git worktree add .claude/worktrees/<effort>/<NNN-slug> -b worktree-<effort>/<NNN-slug>`, and start a sub-agent that runs the sub-agent section of this skill, giving it the worktree's absolute path.
+1. Make the worktree named after the slice, `<effort>/<NNN-slug>`, by running the project's WorktreeCreate hook with the name, or else `git worktree add .claude/worktrees/<effort>/<NNN-slug> -b worktree-<effort>/<NNN-slug> <default-branch>` and `git submodule update --init` in it, and start a sub-agent that runs the sub-agent section of this skill, giving it the worktree's absolute path.
 2. When the sub-agent reports passes 1–3 done, start a new sub-agent to run /code-review on the slice's commits, and wait for its report. Never run a review yourself. Record every pass's findings in the ledger (see `Passes`).
 3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context. Wait for its report that the fixes are committed, then run the next round or end the rounds, as `Rounds` says.
-4. When the rounds end, tell the implementing sub-agent to set the Status, and wait for its report that it is committed.
+4. When the rounds end, tell the implementing sub-agent to set the Status, naming the model the passes ran on, and wait for its report that it is committed.
 5. Land the slice's branch, as `Landing` says.
 6. Report to the Maintainer: what was committed and landed, each round's findings, and what waits on the Maintainer. Closing waits on the Maintainer's word.
 7. Name any other `ready-for-agent` slices the Maintainer could have implemented next: beside this one where they touch different files, after it where they touch the same ones.
@@ -66,7 +66,7 @@ A round is one `code-review` run; passes 1–3 run once, before round 1. Round 1
 1. **Set the Status.** The implementing sub-agent sets the slice's Status for what it waits on, in the last commit, whose message ends `Reviewed in <N> rounds, by <model>`, naming the model the passes ran on:
    - **A criterion waits on the Maintainer**: `ready-for-human`, as the tracker defines it. The rounds have already run, and a live check the Maintainer ticks afterwards needs no second one.
    - **Every criterion is ticked**: `ready-for-closure`. Closing it waits on the Maintainer's word in the conversation.
-2. **Land.** The session lands the slice's branch with `bin/land` from the project's main checkout, without asking. A branch at `ready-for-human` lands too, so the Maintainer's check runs on main.
+2. **Land.** The session lands the slice's branch with `.agents/bin/land` from the project's main checkout, without asking. A branch at `ready-for-human` lands too, so the Maintainer's check runs on main.
 
 ## Proof
 
@@ -85,7 +85,7 @@ A question in a normal message goes unseen, and the thread looks done, so the se
 
 Ask only when the work cannot continue alone:
 - A change cannot be proven.
-- `bin/land` refuses, for a cause outside the slice.
+- `.agents/bin/land` refuses, for a cause outside the slice.
 - The next step deletes data, touches production, or changes things outside the repo.
 - The goal is ambiguous in a way that changes the result.
 - Another slice makes this one obsolete.
