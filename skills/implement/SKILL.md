@@ -14,15 +14,15 @@ Implement with a sub-agent -> Review passes, each in a new sub-agent -> Repeat i
 
 When the Maintainer says to implement a `ready-for-agent` slice:
 
-1. Make the worktree named after the slice, `<effort>/<NNN-slug>` (where the project has a WorktreeCreate hook, the hook makes it), and start a sub-agent that runs the sub-agent section of this skill, giving it the worktree's path to work in by absolute path. Worktree isolation takes no name, so the sub-agent does not make the worktree.
+1. Make the worktree named after the slice, `<effort>/<NNN-slug>`, and start a sub-agent in it that runs the sub-agent section of this skill, giving it the worktree's absolute path. Where the project has a WorktreeCreate hook, the hook makes the worktree.
 2. When the sub-agent reports passes 1–3 done, start a new sub-agent to run /code-review on the slice's commits, and wait for its report. Never run a review yourself. Record every pass's findings in the ledger (see `Passes`).
-3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context. Wait for its report that the fixes are committed, then start the next round or end them, as `Rounds` says.
+3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context. Wait for its report that the fixes are committed, then run the next round or end the rounds, as `Rounds` says.
 4. When the rounds end, tell the implementing sub-agent to set the Status, and wait for its report that it is committed.
 5. Land the slice's branch, as `Landing` says.
 6. Report to the Maintainer: what was committed and landed, each round's findings, and what waits on the Maintainer. Closing waits on the Maintainer's word.
 7. Name any other `ready-for-agent` slices that could run next, each with its own sub-agent: beside this one where they touch different files, after it where they touch the same ones.
 
-When the implementing sub-agent hands up a question, ask it as `Ask the Maintainer` says and send the answer back with SendMessage.
+When the implementing sub-agent hands up a question, put it to the Maintainer as `Ask the Maintainer` says, and send the answer back with SendMessage.
 
 ## The sub-agent working a slice
 
@@ -31,7 +31,7 @@ Implement the work described in the spec or slice, then put it through review pa
 1. **Implement.** Work in the worktree named after the slice (`<effort>/<NNN-slug>`, branch `worktree-<effort>/<NNN-slug>`), so the worktree and the slice name each other. Use /tdd where possible, at pre-agreed seams. Run typechecking and single test files regularly.
 2. **Prove it.** Get proof for every change you made. See `Proof`.
 3. **Commit once per acceptance criterion.** When a criterion is confirmed, tick it in the slice and commit the tick with the work that met it, using /commit-messages. Run the full test suite before the last commit.
-4. **Run passes 1–3**, as `Passes` says, fixing each pass's findings as `Rounds` says before starting the next.
+4. **Run passes 1–3**, as `Passes` says, fixing each pass's findings, as `Review` says, before starting the next.
 5. **Stop before `code-review`.** Report to the session what was committed and each pass's findings, and stop, with no Status set. The session runs `code-review` and sends its findings: fix them, commit, and report again.
 6. **Set the Status** when the session says the rounds have ended, as `Landing` says, and report that it is committed.
 
@@ -39,7 +39,7 @@ Where you cannot continue alone, hand the question to the session in your report
 
 ## Review
 
-Fix what each finding names, and nothing more. The rule for one that reaches past the slice is under `Rounds`.
+Fix what each finding names, and nothing more. A finding that reaches past the slice is handled as `Rounds` says.
 
 ### Passes
 
@@ -77,11 +77,9 @@ Proof is evidence you observed yourself in this session: command output, a repro
 - Add one focused test that fails without the fix, where the behaviour has none and the repo has a test setup.
 - For UI and runtime behaviour, run the app, code or service and look at the change. Green mocked tests do not prove the user experience works. Put screenshots in the scratchpad.
 
-A change you cannot prove is one you are not confident in: `Ask the Maintainer`.
-
 ## Ask the Maintainer
 
-A question in a normal message goes unseen, and the thread looks done. The implementing sub-agent hands its question to the session in its report and stops; the session asks it with the harness's question tool, `AskUserQuestion` in Claude Code, so the thread shows that it is waiting.
+A question in a normal message goes unseen, and the thread looks done, so the session asks it with the harness's question tool, `AskUserQuestion` in Claude Code, and the thread shows that it is waiting.
 
 - Put all the context in the question: what blocks the work, and the options with the recommendation first.
 

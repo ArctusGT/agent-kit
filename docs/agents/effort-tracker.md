@@ -73,8 +73,7 @@ Specs are created using a skill. Agents defer to the maintainer to invoke a skil
 Closed slices are retained only in git. The code base is representative of work done.
 
 - Agents close a slice only on the Maintainer's confirmation
-- While a criterion waits on the Maintainer, such as a converge or a live observation, the slice's Status is `ready-for-human`
-- The Status becomes `ready-for-human` or `ready-for-closure`, and the branch lands, as `implement` says, after its review rounds
+- The Status is `ready-for-human` while a criterion waits on the Maintainer, such as a converge or a live observation, and `ready-for-closure` once every criterion is ticked. `implement` says when it is set and when the branch lands.
   - The Maintainer reads it, and says in the conversation to close it. Agents remind the Maintainer which slices are waiting.
 - **The Maintainer's word to close a `ready-for-closure` slice is the confirmation to close it**
   - The Agent deletes the file and commits the deletion, with the commit message naming the instruction. A worktree's branch has already landed by then, so the slice is closed on main.
