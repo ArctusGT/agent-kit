@@ -32,7 +32,7 @@ Based on Matt Pocock's original skills, by which followed the following build ch
 grill-with-docs → to-spec → to-slices → implement
 ```
 
-`implement` hands the slice to a sub-agent, and the session that handed it off runs `code-review` on it, as the rule under Closing slices says.
+`implement` owns how a slice is worked: who implements it, the review passes and rounds, setting the Status, and landing. This document covers making, raising and closing slices.
 
 ## Layout
 
@@ -74,11 +74,10 @@ Closed slices are retained only in git. The code base is representative of work 
 
 - Agents close a slice only on the Maintainer's confirmation
 - While a criterion waits on the Maintainer, such as a converge or a live observation, the slice's Status is `ready-for-human`
-- An Agent other than the one that implemented the slice runs the `code-review` skill, on the commits that did the slice's work, once every criterion the implementing Agent can check is ticked and before the Status becomes `ready-for-human` or `ready-for-closure`. Review runs repeat on the fixes until a run leaves no finding unfixed and unnamed. The implementing Agent fixes what it finds or names it in the slice for the Maintainer. A live check the Maintainer ticks afterwards needs no second review.
-- Once every acceptance criterion is ticked and a `code-review` run leaves no finding unfixed and unnamed, the implementing Agent sets the Status to `ready-for-closure`
+- The Status becomes `ready-for-human` or `ready-for-closure`, and the branch lands, as `implement` says, after its review rounds
   - The Maintainer reads it, and says in the conversation to close it. Agents remind the Maintainer which slices are waiting.
 - **The Maintainer's word to close a `ready-for-closure` slice is the confirmation to close it**
-  - The Agent deletes the file and commits the deletion, with the commit message naming the instruction. The Agent lands a worktree's branch with `bin/land` once its `code-review` is done and its Status set, without asking. The slice is then closed on main, on the Maintainer's word.
+  - The Agent deletes the file and commits the deletion, with the commit message naming the instruction. A worktree's branch has already landed by then, so the slice is closed on main.
   - The closing commit is the record, since git is the only place the slice survives: what the slice delivered, and anything named in it for the Maintainer that is still open.
   - The effort directory and spec may remain unless the maintainer instructs the agent to remove it
 
