@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# Check that bin/land merges worktree branches with their kit commits, pushes
+# both mains (kit first), cleans up after them, and refuses without changing
+# anything where it should.
+#
+#   tests/land
+#
+# Builds a throwaway project with .agents as a submodule, a bare repo as each
+# origin, and agent worktrees under .claude/worktrees, as the project's
+# WorktreeCreate hook makes them. Never touches a real remote. Exits non-zero
+# on any failure.
+#
+# Needs git. Everything is made under TMPDIR (default /tmp) and removed after.
+usage() {
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+case ${1:-} in -h | --help) usage; exit 0 ;; esac
+
+land=$(realpath "$(dirname "$0")/../bin/land")
+t=$(mktemp -d "${TMPDIR:-/tmp}/land.XXXXXX")
+trap 'rm -rf "$t"' EXIT
+unset GIT_DIR GIT_WORK_TREE
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=protocol.file.allow GIT_CONFIG_VALUE_0=always
+
+failed=0
+expect() { # $1 name, then a command
+  local name=$1; shift
+  if "$@"; then echo "ok   $name"; else echo "FAIL $name"; failed=1; fi
+}
+no_ref() { ! git -C "$1" rev-parse -q --verify "refs/heads/$2" >/dev/null; }
+no_branch_on() { [[ -z $(git -C "$1" branch --list "$2") ]]; }
+
+# a fresh project at $t/$1: kit and project each cloned from a bare origin
+fixture() {
+  local d=$t/$1
+  git init -q --bare -b main "$d-kit.git"
+  git init -q --bare -b main "$d-proj.git"
+  git clone -q "$d-kit.git" "$d-kitseed" 2>/dev/null
+  git -C "$d-kitseed" checkout -q -b main
+  echo kit >"$d-kitseed/kit.txt"
+  git -C "$d-kitseed" add kit.txt
+  git -C "$d-kitseed" commit -q -m kit
+  git -C "$d-kitseed" push -q origin main
+  git clone -q "$d-proj.git" "$d" 2>/dev/null
+  git -C "$d" checkout -q -b main
+  echo one >"$d/a.txt"
+  git -C "$d" add a.txt
+  git -C "$d" submodule add -q "$d-kit.git" .agents
+  git -C "$d" commit -q -m project
+  git -C "$d" push -q origin main
+  git -C "$d/.agents" checkout -q main
+  echo '.claude/worktrees/' >>"$d/.git/info/exclude"
+}
+
+# $1 project, $2 branch, $3 file the project commit writes, $4 its content:
+# a worktree on a new branch, with a kit commit of its own and the pointer bumped
+agent() {
+  local d=$1 b=$2 f=${3:-$2.txt} wt=$1/.claude/worktrees/$2
+  git -C "$d" worktree add -q -b "$b" "$wt"
+  git -C "$wt" submodule update -q --init
+  git -C "$wt/.agents" checkout -q -b "kit-$b"
+  echo "$b" >"$wt/.agents/$b.txt"
+  git -C "$wt/.agents" add "$b.txt"
+  git -C "$wt/.agents" commit -q -m "kit $b"
+  echo "${4:-$b}" >"$wt/$f"
+  git -C "$wt" add .agents "$f"
+  git -C "$wt" commit -q -m "project $b"
+}
+
+# both mains and both origins, one line
+heads() {
+  echo "$(git -C "$1" rev-parse HEAD) $(git -C "$1/.agents" rev-parse HEAD)" \
+    "$(git -C "$1-proj.git" rev-parse main) $(git -C "$1-kit.git" rev-parse main)"
+}
+
+# --- two branches, each moving .agents, none on origin ---
+fixture two
+agent "$t/two" alpha
+agent "$t/two" beta
+cd "$t/two" || exit 1
+out=$("$land" alpha beta 2>&1); rc=$?
+expect "two branches: land exits 0" eval '[[ $rc -eq 0 ]]'
+expect "two branches: project origin is main" eval '[[ $(git rev-parse HEAD) == "$(git -C ../two-proj.git rev-parse main)" ]]'
+expect "two branches: kit origin is the kit's main" eval '[[ $(git -C .agents rev-parse HEAD) == "$(git -C ../two-kit.git rev-parse main)" ]]'
+expect "two branches: .agents points at the kit's main" eval '[[ $(git rev-parse HEAD:.agents) == "$(git -C .agents rev-parse HEAD)" ]]'
+expect "two branches: both branches' work is on main" eval '[[ -f .agents/alpha.txt && -f .agents/beta.txt && -f alpha.txt && -f beta.txt ]]'
+expect "two branches: one merge commit apiece" eval '[[ $(git rev-list --merges --count HEAD) -eq 2 ]]'
+expect "two branches: no worktree left" eval '[[ $(git worktree list | wc -l) -eq 1 && ! -e .claude/worktrees/alpha && ! -e .claude/worktrees/beta ]]'
+expect "two branches: no branch left" no_ref . alpha
+expect "two branches: no branch left (beta)" no_ref . beta
+expect "two branches: no branch on either origin" no_branch_on ../two-proj.git 'alpha'
+expect "two branches: no kit branch on the kit origin" no_branch_on ../two-kit.git 'kit-*'
+expect "two branches: the kit's main is clean" eval '[[ -z $(git -C .agents status --porcelain) ]]'
+
+# --- a branch that was pushed is deleted from origin too ---
+fixture pushed
+agent "$t/pushed" gamma
+cd "$t/pushed" || exit 1
+git -C .claude/worktrees/gamma push -q origin gamma
+git -C .claude/worktrees/gamma/.agents push -q origin kit-gamma
+out=$("$land" gamma 2>&1); rc=$?
+expect "pushed: land exits 0" eval '[[ $rc -eq 0 ]]'
+expect "pushed: branch gone from the project origin" no_branch_on ../pushed-proj.git gamma
+expect "pushed: kit branch gone from the kit origin" no_branch_on ../pushed-kit.git 'kit-gamma'
+expect "pushed: the mains were pushed" eval '[[ $(git rev-parse HEAD) == "$(git -C ../pushed-proj.git rev-parse main)" ]]'
+
+# --- refusals leave both mains and both origins as they were ---
+refuses() { # $1 name, $2 project, $3 what the message must mention, then branches
+  local name=$1 d=$2 want=$3 before after
+  shift 3
+  cd "$d" || exit 1
+  before=$(heads "$d")
+  out=$("$land" "$@" 2>&1); rc=$?
+  after=$(heads "$d")
+  expect "$name: refused saying why" eval '[[ $rc -ne 0 && $out == *"$want"* ]]'
+  expect "$name: mains and origins unchanged" eval '[[ $before == "$after" ]]'
+  expect "$name: main checkout clean, first branch kept" eval '[[ -z $(git status --porcelain) && -d .claude/worktrees/ok1 ]]'
+}
+
+fixture bad
+agent "$t/bad" ok1
+agent "$t/bad" locked1
+agent "$t/bad" dirty1
+agent "$t/bad" dirtykit
+agent "$t/bad" clash a.txt changed
+git -C "$t/bad" worktree lock "$t/bad/.claude/worktrees/locked1"
+echo x >"$t/bad/.claude/worktrees/dirty1/a.txt"
+echo x >>"$t/bad/.claude/worktrees/dirtykit/.agents/kit.txt"
+# main moves a.txt too, so the clash branch conflicts outside .agents
+echo different >"$t/bad/a.txt"
+git -C "$t/bad" add a.txt
+git -C "$t/bad" commit -q -m "main moves a.txt"
+git -C "$t/bad" push -q origin main
+
+refuses "locked worktree" "$t/bad" "locked" ok1 locked1
+refuses "dirty worktree" "$t/bad" "uncommitted" ok1 dirty1
+refuses "dirty .agents" "$t/bad" "uncommitted" ok1 dirtykit
+refuses "conflict outside .agents" "$t/bad" "a.txt" ok1 clash
+expect "conflict: the first branch is unmerged" eval '[[ ! -f $t/bad/ok1.txt ]]'
+
+exit $failed
