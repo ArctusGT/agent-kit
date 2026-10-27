@@ -4,15 +4,15 @@
 #
 #   land <branch>...
 #
-# Run in the project's main checkout, with the kit (.agents) on its main and
+# Run in the project's main checkout, with the kit (.agents) on a branch and
 # both clean. For each branch, which must be checked out in a worktree: fetches
 # the kit commit its .agents points at from the worktree's own .agents, merges
 # it into the kit's main, then merges the branch into the project's main with
 # .agents at the kit's new main, making both merge commits itself.
 #
-# Once every branch has merged it pushes the kit's main, then the project's,
-# removes each worktree and its branch, and deletes the branch, and the kit
-# branch its .agents was on, from origin where one was pushed.
+# Once every branch has merged it pushes the kit's main, then the project's.
+# It then removes each worktree, which takes the kit branch its .agents was on,
+# and the project branch, and deletes either from origin where one was pushed.
 #
 # It refuses, changing nothing and pushing nothing, where a worktree is locked
 # or holds uncommitted work (in it or its .agents), or a merge conflicts anywhere
@@ -32,23 +32,25 @@ top=$(git rev-parse --show-toplevel)
 kit=$top/.agents
 main=$(git symbolic-ref --short HEAD) || die "the project is on no branch"
 kitmain=$(git -C "$kit" symbolic-ref --short HEAD) || die ".agents is on no branch"
-dirty() { git -C "$1" status --porcelain --untracked-files=no --ignore-submodules=none; }
-[[ -z $(dirty "$top") ]] || die "the main checkout has uncommitted changes"
-[[ -z $(dirty "$kit") ]] || die ".agents in the main checkout has uncommitted changes"
+# $1 the checkout, $2 untracked-files mode: a worktree's untracked files are
+# lost with it, the main checkout's are not touched by a merge
+dirty() { git -C "$1" status --porcelain --untracked-files="$2" --ignore-submodules=none; }
+[[ -z $(dirty "$top" no) ]] || die "the main checkout has uncommitted changes"
+[[ -z $(dirty "$kit" no) ]] || die ".agents in the main checkout has uncommitted changes"
 
 # --- checks: nothing is changed until every branch passes ---
 declare -A wt kitbranch kitsha
 for b in "$@"; do
   # the worktree having $b: its path and whether it is locked, which the
   # porcelain lists after the branch, so a block is judged when it ends
-  read -r path locked < <(git worktree list --porcelain | awk -v b="refs/heads/$b" '
+  IFS=$'\t' read -r path locked < <(git worktree list --porcelain | awk -v b="refs/heads/$b" '
     /^worktree / {p = substr($0, 10); l = "unlocked"; hit = 0}
     /^locked/ {l = "locked"}
     $0 == "branch " b {hit = 1}
-    /^$/ && hit {print p, l; exit}')
+    /^$/ && hit {print p "\t" l; exit}')
   [[ -n ${path:-} ]] || die "$b: no worktree has it checked out"
   [[ $locked == unlocked ]] || die "$b: its worktree is locked"
-  [[ -z $(dirty "$path") ]] || die "$b: its worktree has uncommitted work"
+  [[ -z $(dirty "$path" all) ]] || die "$b: its worktree has uncommitted work"
   wt[$b]=$path
   kitsha[$b]=$(git rev-parse "$b:.agents") || die "$b: no .agents pointer"
   kitbranch[$b]=$(git -C "$path/.agents" symbolic-ref --short -q HEAD || true)
@@ -69,10 +71,12 @@ for b in "$@"; do
   sha=${kitsha[$b]}
   git -C "$kit" fetch -q "${wt[$b]}/.agents" HEAD || undo "$b: fetching its kit commits failed"
   git -C "$kit" cat-file -e "$sha^{commit}" || undo "$b: its kit commit $sha is not in its .agents"
-  git -C "$kit" merge -q --no-edit -m "Merge ${kitbranch[$b]:-$sha} for $b" "$sha" >/dev/null ||
+  git -C "$kit" merge -q --no-ff -m "Merge ${kitbranch[$b]:-$sha} for $b" "$sha" >/dev/null ||
     undo "$b: its kit commits conflict with the kit's $kitmain"
 
   git merge -q --no-ff --no-commit "$b" >/dev/null 2>&1
+  git rev-parse -q --verify MERGE_HEAD >/dev/null || [[ -n $(git diff --name-only --diff-filter=U) ]] ||
+    undo "$b: the merge did not start"
   conflicts=$(git diff --name-only --diff-filter=U)
   [[ -z $conflicts || $conflicts == .agents ]] || undo "$b: conflicts in $(tr '\n' ' ' <<<"$conflicts")"
   git update-index --cacheinfo "160000,$(git -C "$kit" rev-parse HEAD),.agents"
@@ -93,7 +97,6 @@ for b in "$@"; do
   on_origin "$top" "$b" && git push -q origin --delete "$b"
   kb=${kitbranch[$b]}
   if [[ -n $kb && $kb != "$kitmain" ]]; then
-    git -C "$kit" branch -q -d "$kb" 2>/dev/null
     on_origin "$kit" "$kb" && git -C "$kit" push -q origin --delete "$kb"
   fi
   echo "land: removed $b"

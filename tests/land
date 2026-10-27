@@ -86,6 +86,7 @@ expect "two branches: kit origin is the kit's main" eval '[[ $(git -C .agents re
 expect "two branches: .agents points at the kit's main" eval '[[ $(git rev-parse HEAD:.agents) == "$(git -C .agents rev-parse HEAD)" ]]'
 expect "two branches: both branches' work is on main" eval '[[ -f .agents/alpha.txt && -f .agents/beta.txt && -f alpha.txt && -f beta.txt ]]'
 expect "two branches: one merge commit apiece" eval '[[ $(git rev-list --merges --count HEAD) -eq 2 ]]'
+expect "two branches: one kit merge commit apiece" eval '[[ $(git -C .agents rev-list --merges --count HEAD) -eq 2 ]]'
 expect "two branches: no worktree left" eval '[[ $(git worktree list | wc -l) -eq 1 && ! -e .claude/worktrees/alpha && ! -e .claude/worktrees/beta ]]'
 expect "two branches: no branch left" no_ref . alpha
 expect "two branches: no branch left (beta)" no_ref . beta
@@ -126,6 +127,8 @@ agent "$t/bad" dirtykit
 agent "$t/bad" clash a.txt changed
 git -C "$t/bad" worktree lock "$t/bad/.claude/worktrees/locked1"
 echo x >"$t/bad/.claude/worktrees/dirty1/a.txt"
+agent "$t/bad" untracked1
+echo x >"$t/bad/.claude/worktrees/untracked1/stray.txt"
 echo x >>"$t/bad/.claude/worktrees/dirtykit/.agents/kit.txt"
 # main moves a.txt too, so the clash branch conflicts outside .agents
 echo different >"$t/bad/a.txt"
@@ -135,6 +138,7 @@ git -C "$t/bad" push -q origin main
 
 refuses "locked worktree" "$t/bad" "locked" ok1 locked1
 refuses "dirty worktree" "$t/bad" "uncommitted" ok1 dirty1
+refuses "untracked file" "$t/bad" "uncommitted" ok1 untracked1
 refuses "dirty .agents" "$t/bad" "uncommitted" ok1 dirtykit
 refuses "conflict outside .agents" "$t/bad" "a.txt" ok1 clash
 expect "conflict: the first branch is unmerged" eval '[[ ! -f $t/bad/ok1.txt ]]'

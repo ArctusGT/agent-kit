@@ -53,7 +53,7 @@ Specs are created using a skill. Agents defer to the maintainer to invoke a skil
     - Pre-existing slices may be enhanced, merged or contributed to after their initial creation with new requirements.
     - A rework of a raised slice, any change to its scope or criteria, is left uncommitted like a draft and holds only once the Maintainer says to raise it. Ticking a criterion or setting a Status is not a rework.
   - A drafted slice is a file left uncommitted in whichever checkout the Agent is working in, a worktree included, for the Maintainer to read. A worktree a slice is drafted in branches from the local default branch, not the remote's, so it sees every slice already raised.
-  - A committed slice lands on the default branch straight away. The Agent cherry-picks that one commit onto it in the main checkout, never the whole branch, so unreviewed work on the branch stays behind. A session isolated to a worktree cannot reach the main checkout, so the Agent leaves the worktree, keeping it, to land the slice.
+  - A committed slice lands on the default branch straight away. The Agent cherry-picks that one commit onto it in the main checkout, never the whole branch, so unreviewed work on the branch stays behind. A session isolated to a worktree cannot reach the main checkout, so the Agent leaves the worktree, keeping it, to commit the slice there.
   - A slice is raised when the Maintainer says so in the conversation.
     - The Agent commits the draft as written, and the commit message names the instruction.
     - A slice left uncommitted is undecided. Not rejected, not forgotten, and not the Agent's to revise or delete on its own
@@ -76,7 +76,7 @@ Closed slices are retained only in git. The code base is representative of work 
   - Before setting it, the Agent runs the `code-review` skill on the commits that did the slice's work, and fixes what it finds or names it in the slice for the Maintainer.
   - The Maintainer reads it, and says in the conversation to close it. Agents remind the Maintainer which slices are waiting.
 - **The Maintainer's word to close a `ready-for-closure` slice is the confirmation to close it**
-  - The Agent deletes the file and commits the deletion, with the commit message naming the instruction. A slice still in a worktree's branch is closed there, and lands with the branch (`bin/land`).
+  - The Agent deletes the file and commits the deletion, with the commit message naming the instruction. The Agent lands a worktree's branch with `bin/land` when the Maintainer says so, or as part of closing its slice. A slice with every criterion ticked is closed by its branch's own close commit, and one still waiting on a live check is closed on main afterwards.
   - The closing commit is the record, since git is the only place the slice survives: what the slice delivered, and anything named in it for the Maintainer that is still open.
   - The effort directory and spec may remain unless the maintainer instructs the agent to remove it
 
