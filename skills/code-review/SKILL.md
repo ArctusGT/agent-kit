@@ -22,6 +22,18 @@ Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so th
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
 
+**The kit's range.** Where the work lives in `.agents`, the project's diff is a submodule pointer and nothing of the work. Read the pointer at each end, as the gitlink's commit (mode `160000`):
+
+    base=$(git merge-base <fixed-point> HEAD)
+    kit_old=$(git ls-tree $base .agents | awk '$1 == 160000 {print $3}')
+    kit_new=$(git ls-tree HEAD .agents | awk '$1 == 160000 {print $3}')
+
+A plain directory at `.agents` has no `160000` entry, so it reads as empty. Then:
+
+1. If either is empty, or `kit_old` equals `kit_new`, there is no kit range: review the project alone.
+2. Otherwise make sure both pointers are in the local kit (`git -C .agents cat-file -e <sha>`). If one is missing, fetch once with `git -C .agents fetch`. If it is still missing, note it for the final report in step 5 and go on with the project's diff alone.
+3. Capture the kit's range beside the project's own: `git -C .agents diff $kit_old...$kit_new`, with commits from `git -C .agents log $kit_old..$kit_new --oneline`.
+
 ### 2. Identify the spec source
 
 Look for the originating spec, in this order:
@@ -41,13 +53,13 @@ Code structure, method clarity, naming and comments are out of scope here. The s
 
 **Standards sub-agent prompt** should include:
 
-- The full diff command and commit list.
+- The full diff command and commit list, and the kit's where there is one (paths in it are relative to `.agents`).
 - The list of standards-source files you found in step 3.
 - The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) for every README in or above a directory the diff touches, each claim that no longer holds at `HEAD`: quote the line and what the code does instead. A README one branch wrote goes stale when a branch merged beside it changes the behaviour it describes. Distinguish hard violations from judgement calls. Skip anything tooling enforces. Under 400 words."
 
 **Spec sub-agent prompt** should include:
 
-- The diff command and commit list.
+- The diff command and commit list, and the kit's where there is one.
 - The path or fetched contents of the spec.
 - The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
 

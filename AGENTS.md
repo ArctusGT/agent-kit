@@ -92,7 +92,7 @@ Non-trivial includes any of the following (not already approved or specified in 
 
 ## Commits
 
-Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Everything else in the index is ours, so never `git add -A` or `.`, `reset`, `stash`, `restore`, or a bare `git commit`. A slice is raised, and closed, when I say so in the conversation; the commit message names the instruction (`docs/agents/effort-tracker.md`). Slices are yours to draft and leave uncommitted for me to read. Setting `ready-for-closure` is yours too: once every criterion is ticked, run `code-review` on the slice's commits and set it.
+Commit your own work by path: `git add <path>`, then `git commit -- <paths>`. Everything else in the index is ours, so never `git add -A` or `.`, `reset`, `stash`, `restore`, or a bare `git commit`. A slice is raised, and closed, when I say so in the conversation; the commit message names the instruction (`docs/agents/effort-tracker.md`). Slices are yours to draft and leave uncommitted for me to read. Setting `ready-for-closure` is yours too: run `code-review` when the tracker says to (`docs/agents/effort-tracker.md`), then set it once every criterion is ticked.
 
 A branch, this project's or the kit's, stays off origin. Push only the two mains, through `bin/land`, which lands a worktree's branch together with the kit commits its `.agents` points at, unless the project's AGENTS.md or I ask for a branch there, such as to try it on another host before it lands.
 
