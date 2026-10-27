@@ -25,13 +25,13 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 **The kit's range.** Where the work lives in `.agents`, the project's diff is a submodule pointer and nothing of the work. Read the pointer at each end, as the gitlink's commit (mode `160000`):
 
     base=$(git merge-base <fixed-point> HEAD)
-    old=$(git ls-tree $base .agents | awk '$1 == 160000 {print $3}')
-    new=$(git ls-tree HEAD .agents | awk '$1 == 160000 {print $3}')
+    kit_old=$(git ls-tree $base .agents | awk '$1 == 160000 {print $3}')
+    kit_new=$(git ls-tree HEAD .agents | awk '$1 == 160000 {print $3}')
 
 A plain directory at `.agents` has no `160000` entry, so it reads as empty. Then:
 
-1. If either is empty, or `old` equals `new`, there is no kit range: review the project alone.
-2. Otherwise capture the kit's range beside the project's own: `git -C .agents diff $old...$new`, with commits from `git -C .agents log $old..$new --oneline`.
+1. If either is empty, or `kit_old` equals `kit_new`, there is no kit range: review the project alone.
+2. Otherwise capture the kit's range beside the project's own: `git -C .agents diff $kit_old...$kit_new`, with commits from `git -C .agents log $kit_old..$kit_new --oneline`.
 3. If a pointer is missing from the local kit (`git -C .agents cat-file -e <sha>`), fetch once with `git -C .agents fetch`. If it is still missing, note it for the final report in step 5 and go on with the project's diff alone.
 
 ### 2. Identify the spec source
