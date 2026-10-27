@@ -29,8 +29,10 @@ Read the file at the referenced path. The user will normally pass the path or th
 Based on Matt Pocock's original skills, by which followed the following build chain:
 
 ```txt
-grill-with-docs → to-spec → to-slices → implement → code-review
+grill-with-docs → to-spec → to-slices → implement
 ```
+
+`implement` hands the slice to a sub-agent, and the session that handed it off runs `code-review` on it, as the rule under Closing slices says.
 
 ## Layout
 

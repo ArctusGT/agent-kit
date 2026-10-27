@@ -1,17 +1,17 @@
 ---
 name: implement
-description: "Implement, commit and review a slice or spec. Use when the user or a briefing agent asks for a slice or spec to be implemented."
+description: "Implement, commit and review a slice or spec. Use when the Maintainer asks for a slice or spec to be implemented."
 ---
 
-A slice is implemented by two kinds of agent. The session the Maintainer talks to hands it off and checks the work; a sub-agent implements it. No agent reviews its own code with `code-review`, and the session reads reports, never the diff or a review's working material.
+A slice is implemented by two kinds of agent. The session the Maintainer talks to hands it off and checks the work; a sub-agent implements it. The agent that wrote the code never runs `code-review` on it, and the session reads reports, never the diff or a review's working material.
 
 ## The session handing a slice off
 
 When the Maintainer says to implement a `ready-for-agent` slice:
 
-1. Make the worktree named after the slice, passing `<effort>/<NNN-slug>` as its `name`, and start a sub-agent in it that runs the sub-agent section of this skill.
+1. Make the worktree named after the slice, `<effort>/<NNN-slug>` (where the project has a WorktreeCreate hook, the hook makes it), and start a sub-agent that runs the sub-agent section of this skill, giving it the worktree's path to work in by absolute path. Worktree isolation takes no name, so the sub-agent does not make the worktree.
 2. When the sub-agent reports, start a separate sub-agent to run /code-review on the slice's commits, and wait for its report. Never run the review yourself.
-3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context, and it fixes each or names it in the slice. Then start a new `code-review` sub-agent. Repeat until a run leaves no finding unfixed and unnamed, then tell the implementing sub-agent to set the Status in its last commit.
+3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context. Wait for its report that the fixes are committed, then start a new `code-review` sub-agent. Repeat until the tracker's rule on when `code-review` runs says it is done, then tell the implementing sub-agent to set the Status in its last commit.
 4. Report to the Maintainer: what was committed, each review's findings, and what waits on the Maintainer. Landing and closing wait on the Maintainer's word.
 
 ## The sub-agent working a slice
@@ -25,8 +25,8 @@ Implement the work described in the spec or slice, then put it through three rev
    2. /method-review: is each method as clear as it could be?
    3. /hierarchical-documentation: names and comments. It edits in place; read its changes before committing them, and use its commit-message notes.
 4. **Fix within the slice.** Fix each finding inside the slice's scope and commit the fix. A finding beyond it, such as a reframing that reaches past what the slice asked for, is named in the slice for the Maintainer instead. Done when every finding is one or the other.
-5. **Stop before `code-review`.** After the third review, report to the session what was committed and each review's findings, and stop. Do not set a Status yet. The session runs `code-review` in a separate sub-agent and sends its findings; fix them as step 4 says, and name any it leaves to the Maintainer in the slice.
-6. **Set the Status.** When the session says a `code-review` run left no finding unfixed and unnamed, set the slice's Status for what it waits on, in the last commit:
+5. **Stop before `code-review`.** After the third review, report to the session what was committed and each review's findings, and stop. Do not set a Status yet. The session runs `code-review` in a separate sub-agent and sends its findings; fix them as step 4 says, commit, and report to the session that the fixes are committed, so it can start the next run.
+6. **Set the Status.** When the session says `code-review` is done, set the slice's Status for what it waits on, in the last commit:
    - **A criterion waits on the Maintainer** (a converge, a live observation): `ready-for-human`. The reviews, `code-review` included, have already run; the tracker's closing rules say why a live check ticked later needs no second one.
    - **Every criterion is ticked**: `ready-for-closure`. Closing it waits on the Maintainer's word in the conversation.
 
