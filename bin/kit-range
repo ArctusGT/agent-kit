@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Print the kit's range for a project's commits: the .agents pointer at the
+# merge-base of FIXED-POINT and HEAD, and at HEAD, as two commits on one line.
+#
+#   kit-range <fixed-point> [<head>]
+#
+# Run in the project's checkout. <head> is HEAD unless given. Prints nothing
+# where there is no kit range: .agents is no submodule at either end, or the
+# pointer did not move. Fetches the kit once where either commit is not in the
+# local kit, which is all it changes; exits 1 naming the commit where it is
+# still missing after that.
+usage() {
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+case ${1:-} in -h | --help) usage; exit 0 ;; '') usage >&2; exit 2 ;; esac
+
+head=${2:-HEAD}
+base=$(git merge-base "$1" "$head") || exit 1
+# the gitlink's commit; a plain directory has no 160000 entry and reads empty
+pointer() { git ls-tree "$1" .agents | awk '$1 == 160000 {print $3}'; }
+old=$(pointer "$base")
+new=$(pointer "$head")
+[[ -n $old && -n $new && $old != "$new" ]] || exit 0
+
+kit=$(git rev-parse --show-toplevel)/.agents
+local_has() { git -C "$kit" cat-file -e "$1^{commit}" 2>/dev/null; }
+if ! local_has "$old" || ! local_has "$new"; then
+  git -C "$kit" fetch -q
+  for c in "$old" "$new"; do
+    local_has "$c" || { echo "kit-range: $c is not in the kit, even after a fetch" >&2; exit 1; }
+  done
+fi
+echo "$old $new"

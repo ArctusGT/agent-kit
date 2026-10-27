@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Check bin/kit-range against a throwaway project whose .agents pointer moves:
+# the range it prints, nothing where the pointer stays, a kit commit fetched
+# when the local kit lacks it, and exit 1 where no fetch finds it.
+#
+#   tests/kit-range
+#
+# Builds the project, the kit and the kit's bare origin under TMPDIR (default
+# /tmp) and removes them after. Needs git. Exits non-zero on any mismatch.
+usage() {
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+case ${1:-} in -h | --help) usage; exit 0 ;; esac
+
+kit_range=$(cd "$(dirname "$0")/.." && pwd)/bin/kit-range
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/kit-range.XXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+failed=0
+expect() { # $1 name, $2 expected output, then the command
+  local name=$1 want=$2; shift 2
+  local got; got=$("$@" 2>/dev/null); local rc=$?
+  if [[ $got == "$want" && $rc == 0 ]]; then echo "ok   $name"; else echo "FAIL $name: got [$got] exit $rc"; failed=1; fi
+}
+
+# the kit's origin and a clone to commit in; the project's .agents is another
+# clone, taken before k2 exists, so it lacks k2 until it fetches
+git init -q --bare "$tmp/kit.git"
+git clone -q "$tmp/kit.git" "$tmp/kit" 2>/dev/null
+kit_commit() { git -C "$tmp/kit" commit -q --allow-empty -m "$1"; git -C "$tmp/kit" push -q origin HEAD 2>/dev/null; git -C "$tmp/kit" rev-parse HEAD; }
+k1=$(kit_commit k1)
+git init -q "$tmp/project"
+git clone -q "$tmp/kit.git" "$tmp/project/.agents" 2>/dev/null
+k2=$(kit_commit k2)
+# a project commit pointing .agents at $1
+point() {
+  git -C "$tmp/project" update-index --add --cacheinfo "160000,$1,.agents"
+  git -C "$tmp/project" commit -q -m "point at $1"; git -C "$tmp/project" rev-parse HEAD
+}
+p1=$(point "$k1")
+p2=$(point "$k2")
+p3=$(point 1111111111111111111111111111111111111111)
+
+cd "$tmp/project" || exit 1
+expect "a pointer that stays prints nothing" "" "$kit_range" "$p1" "$p1"
+expect "a moved pointer missing locally is fetched and printed" "$k1 $k2" "$kit_range" "$p1" "$p2"
+if "$kit_range" "$p2" "$p3" >/dev/null 2>&1; then echo "FAIL a pointer no fetch finds exits 1"; failed=1
+else echo "ok   a pointer no fetch finds exits 1"; fi
+exit $failed

@@ -22,17 +22,11 @@ Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so th
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
 
-**The kit's range.** Where the work lives in `.agents`, the project's diff is a submodule pointer and nothing of the work. Read the pointer at each end, as the gitlink's commit (mode `160000`):
+**The kit's range.** Where the work lives in `.agents`, the project's diff is a submodule pointer and nothing of the work. `.agents/bin/kit-range <fixed-point>` prints the pointer at each end, `kit_old kit_new`, fetching the kit once where either is missing:
 
-    base=$(git merge-base <fixed-point> HEAD)
-    kit_old=$(git ls-tree $base .agents | awk '$1 == 160000 {print $3}')
-    kit_new=$(git ls-tree HEAD .agents | awk '$1 == 160000 {print $3}')
-
-A plain directory at `.agents` has no `160000` entry, so it reads as empty. Then:
-
-1. If either is empty, or `kit_old` equals `kit_new`, there is no kit range: review the project alone.
-2. Otherwise make sure both pointers are in the local kit (`git -C .agents cat-file -e <sha>`). If one is missing, fetch once with `git -C .agents fetch`. If it is still missing, note it for the final report in step 5 and go on with the project's diff alone.
-3. Capture the kit's range beside the project's own: `git -C .agents diff $kit_old...$kit_new`, with commits from `git -C .agents log $kit_old..$kit_new --oneline`.
+1. It prints nothing: there is no kit range; review the project alone.
+2. It exits 1: a pointer is not in the kit even after the fetch. Note it for the final report in step 5 and go on with the project's diff alone.
+3. It prints both: capture the kit's range beside the project's own, `git -C .agents diff $kit_old...$kit_new`, with commits from `git -C .agents log $kit_old..$kit_new --oneline`.
 
 ### 2. Identify the spec source
 
