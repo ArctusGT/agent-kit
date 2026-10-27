@@ -33,7 +33,7 @@
 #   --chart LAYOUT ROOT          the flow chart, in the order of LAYOUT's lines
 #   --chart-pane ROOT            the chart's pane: the chart boxed, redrawn
 #                                when SLICE_VIEW_LAYOUT gains a line and every
-#                                10 seconds; Ctrl-C closes the whole view
+#                                10 seconds
 #   --leader ROOT                the fzf actions for FZF_QUERY and FZF_PROMPT
 #   --esc                        esc's action for FZF_PROMPT
 #   --menu KEYS                  the which-key box for the keys after ␣, at

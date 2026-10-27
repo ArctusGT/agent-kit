@@ -16,9 +16,9 @@
 #
 # tests/slice-view-close runs first, for Ctrl-C in the view's panes.
 #
-# Needs git, python3, bat and jq; fzf is not run here. slice-view-close runs
-# the view itself, so it also needs fzf, nvim, lazygit and tmux. The project is
-# made under TMPDIR (default /tmp).
+# Needs git, python3, bat and jq, and for slice-view-close, which runs the
+# view itself, fzf, nvim, lazygit and tmux too. The project is made under
+# TMPDIR (default /tmp).
 #
 # --show prints what slice-view drew instead of checking it, and skips
 # slice-view-close.
