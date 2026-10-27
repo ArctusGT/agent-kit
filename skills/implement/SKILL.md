@@ -14,10 +14,10 @@ Implement with a sub-agent -> Review passes, each in a new sub-agent -> Repeat i
 
 When the Maintainer says to implement a `ready-for-agent` slice:
 
-1. Make the worktree named after the slice, `<effort>/<NNN-slug>`, by running the project's WorktreeCreate hook with the name, or else `git worktree add .claude/worktrees/<effort>/<NNN-slug> -b worktree-<effort>/<NNN-slug> <default-branch>` and `git submodule update --init` in it, and start a sub-agent that runs the sub-agent section of this skill, giving it the worktree's absolute path.
+1. Make the worktree named after the slice, `<effort>/<NNN-slug>`, by running the project's WorktreeCreate hook with the name, or else, from the main checkout, `git worktree add .claude/worktrees/<effort>/<NNN-slug> -b worktree-<effort>/<NNN-slug>` and `git submodule update --init` in it, and start a sub-agent that runs the sub-agent section of this skill, giving it the worktree's absolute path.
 2. When the sub-agent reports passes 1–3 done, start a new sub-agent to run /code-review on the slice's commits, and wait for its report. Never run a review yourself. Record every pass's findings in the ledger (see `Passes`).
 3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context. Wait for its report that the fixes are committed, then run the next round or end the rounds, as `Rounds` says.
-4. When the rounds end, tell the implementing sub-agent to set the Status, naming the model the passes ran on, and wait for its report that it is committed.
+4. When the rounds end, tell the implementing sub-agent to set the Status, naming the model `code-review` ran on, and wait for its report that it is committed.
 5. Land the slice's branch, as `Landing` says.
 6. Report to the Maintainer: what was committed and landed, each round's findings, and what waits on the Maintainer. Closing waits on the Maintainer's word.
 7. Name any other `ready-for-agent` slices the Maintainer could have implemented next: beside this one where they touch different files, after it where they touch the same ones.
@@ -58,12 +58,13 @@ A round is one `code-review` run; passes 1–3 run once, before round 1. Round 1
 
 - **Fix within the slice.** Fix each finding inside the slice's scope and commit the fix. A finding beyond it, such as a reframing that reaches past what the slice asked for, is named in the slice for the Maintainer instead. A round is done when every finding is one or the other.
 - Another round runs only when the last one fixed more than nitpicks. A nitpick is a wording, comment, doc or format fix that changes no behaviour; declined nitpicks need no round either.
-- Stop at 3 rounds. Go to 5 only while a finding about security, permissions, auth, data loss, or state and concurrency stays open with evidence, or when the Maintainer asks.
+- Stop at 3 rounds. Go to 5 only while a finding about security, permissions, auth, data loss, or state and concurrency stays open with evidence.
+- The Maintainer can ask for another round at any time.
 - A finding still open when the rounds stop is named in the slice for the Maintainer.
 
 ## Landing
 
-1. **Set the Status.** The implementing sub-agent sets the slice's Status for what it waits on, in the last commit, whose message ends `Reviewed in <N> rounds, by <model>`, naming the model the session gave:
+1. **Set the Status.** The implementing sub-agent sets the slice's Status for what it waits on, in the last commit, whose message ends `Reviewed in <N> rounds, by <model>`, naming the model `code-review` ran on, as the session gave it:
    - **A criterion waits on the Maintainer**: `ready-for-human`, as the tracker defines it. The rounds have already run, and a live check the Maintainer ticks afterwards needs no second one.
    - **Every criterion is ticked**: `ready-for-closure`. Closing it waits on the Maintainer's word in the conversation.
 2. **Land.** The session lands the slice's branch with `.agents/bin/land` from the project's main checkout, without asking. A branch at `ready-for-human` lands too, so the Maintainer's check runs on main.
