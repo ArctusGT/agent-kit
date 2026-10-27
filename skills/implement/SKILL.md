@@ -9,11 +9,10 @@ A slice is implemented by two kinds of agent. The session the Maintainer talks t
 
 When the Maintainer says to implement a `ready-for-agent` slice:
 
-1. Make the worktree named after the slice, passing `<effort>/<NNN-slug>` as its `name`, and start a sub-agent in it that runs this skill's part for the sub-agent. Starting waits on the Maintainer's word; a slice being raised is not it.
+1. Make the worktree named after the slice, passing `<effort>/<NNN-slug>` as its `name`, and start a sub-agent in it that runs the sub-agent section of this skill.
 2. When the sub-agent reports, start a separate sub-agent to run /code-review on the slice's commits, and wait for its report. Never run the review yourself.
-3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context, and it fixes each or names it in the slice. Then start a new `code-review` sub-agent. Repeat until a run leaves nothing to fix.
-4. Tell the implementing sub-agent to set the Status in its last commit.
-5. Report to the Maintainer: what was committed, each review's findings, and what waits on the Maintainer. Landing and closing wait on the Maintainer's word.
+3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context, and it fixes each or names it in the slice. Then start a new `code-review` sub-agent. Repeat until a run leaves no finding unfixed and unnamed, then tell the implementing sub-agent to set the Status in its last commit.
+4. Report to the Maintainer: what was committed, each review's findings, and what waits on the Maintainer. Landing and closing wait on the Maintainer's word.
 
 ## The sub-agent working a slice
 
@@ -25,10 +24,10 @@ Implement the work described in the spec or slice, then put it through three rev
    1. /structural-review: does the code's shape match the domain?
    2. /method-review: is each method as clear as it could be?
    3. /hierarchical-documentation: names and comments. It edits in place; read its changes before committing them, and use its commit-message notes.
-4. **Fix within the slice.** Fix each finding, from these reviews and from the `code-review` findings the session sends, inside the slice's scope and commit the fix. A finding beyond it, such as a reframing that reaches past what the slice asked for, is named in the slice for the Maintainer instead. Done when every finding is one or the other.
-5. **Stop before `code-review`.** After the third review, report to the session what was committed and each review's findings, and stop. Do not set a Status yet. The session runs `code-review` in a separate sub-agent and sends its findings; fix them as step 4 says.
-6. **Set the Status.** When the session says a `code-review` run left nothing to fix, set the slice's Status for what it waits on, in the last commit:
-   - **A criterion waits on the Maintainer** (a converge, a live observation): `ready-for-human`. The reviews have already run; the tracker's closing rules say why a live check ticked later needs no second one.
+4. **Fix within the slice.** Fix each finding, inside the slice's scope and commit the fix. A finding beyond it, such as a reframing that reaches past what the slice asked for, is named in the slice for the Maintainer instead. Done when every finding is one or the other.
+5. **Stop before `code-review`.** After the third review, report to the session what was committed and each review's findings, and stop. Do not set a Status yet. The session runs `code-review` in a separate sub-agent and sends its findings; fix them as step 4 says, and name any it leaves to the Maintainer in the slice.
+6. **Set the Status.** When the session says a `code-review` run left no finding unfixed and unnamed, set the slice's Status for what it waits on, in the last commit:
+   - **A criterion waits on the Maintainer** (a converge, a live observation): `ready-for-human`. The reviews, `code-review` included, have already run; the tracker's closing rules say why a live check ticked later needs no second one.
    - **Every criterion is ticked**: `ready-for-closure`. Closing it waits on the Maintainer's word in the conversation.
 
    Then report to the session what was committed and anything left for the Maintainer.
