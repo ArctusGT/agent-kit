@@ -11,7 +11,7 @@ When the Maintainer says to implement a `ready-for-agent` slice:
 
 1. Make the worktree named after the slice, passing `<effort>/<NNN-slug>` as its `name`, and start a sub-agent in it that runs this skill's part for the sub-agent. Starting waits on the Maintainer's word; a slice being raised is not it.
 2. When the sub-agent reports, start a separate sub-agent to run /code-review on the slice's commits, and wait for its report. Never run the review yourself.
-3. If the report has findings, send them to the implementing sub-agent, which fixes each or names it in the slice. Then start a new `code-review` sub-agent. Repeat until a run leaves nothing to fix.
+3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context, and it fixes each or names it in the slice. Then start a new `code-review` sub-agent. Repeat until a run leaves nothing to fix.
 4. Tell the implementing sub-agent to set the Status in its last commit.
 5. Report to the Maintainer: what was committed, each review's findings, and what waits on the Maintainer. Landing and closing wait on the Maintainer's word.
 
@@ -21,7 +21,7 @@ Implement the work described in the spec or slice, then put it through three rev
 
 1. **Implement.** Work in the worktree named after the slice (`<effort>/<NNN-slug>`, branch `worktree-<effort>/<NNN-slug>`), so the worktree and the slice name each other. Use /tdd where possible, at pre-agreed seams. Run typechecking and single test files regularly.
 2. **Commit once per acceptance criterion.** When a criterion is confirmed, tick it in the slice and commit the tick with the work that met it, using /commit-messages. Run the full test suite before the last commit.
-3. **Review, one pass at a time.** Each pass reads the code the previous pass's fixes left, so they run in this order and never in parallel. For each, start a sub-agent on this slice's commits and wait for its report. Fix and commit before starting the next:
+3. **Review, one pass at a time.** Each pass reads the code the previous pass's fixes left, so they run in this order and never in parallel. For each, start a sub-agent on this slice's commits and wait for its report. Fix and commit each pass's findings as step 4 says before starting the next:
    1. /structural-review: does the code's shape match the domain?
    2. /method-review: is each method as clear as it could be?
    3. /hierarchical-documentation: names and comments. It edits in place; read its changes before committing them, and use its commit-message notes.

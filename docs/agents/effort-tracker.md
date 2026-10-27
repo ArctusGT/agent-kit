@@ -73,7 +73,7 @@ Closed slices are retained only in git. The code base is representative of work 
 - Agents close a slice only on the Maintainer's confirmation
 - While a criterion waits on the Maintainer, such as a converge or a live observation, the slice's Status is `ready-for-human`
 - An Agent other than the one that implemented the slice runs the `code-review` skill, on the commits that did the slice's work, when every criterion the implementing Agent can check is ticked. That is before `ready-for-human` or `ready-for-closure`, whichever comes first, and it repeats on the fixes until a run leaves nothing to fix. The implementing Agent fixes what it finds or names it in the slice for the Maintainer. A live check the Maintainer ticks afterwards needs no second review.
-- Once every acceptance criterion is ticked, Agents set the Status to `ready-for-closure`
+- Once every acceptance criterion is ticked and a `code-review` run leaves nothing to fix, the implementing Agent sets the Status to `ready-for-closure`
   - The Maintainer reads it, and says in the conversation to close it. Agents remind the Maintainer which slices are waiting.
 - **The Maintainer's word to close a `ready-for-closure` slice is the confirmation to close it**
   - The Agent deletes the file and commits the deletion, with the commit message naming the instruction. The Agent lands a worktree's branch with `bin/land` when the Maintainer says so, or as part of closing its slice. A slice with every criterion ticked is closed by its branch's own close commit, and one still waiting on a live check is closed on main afterwards.
