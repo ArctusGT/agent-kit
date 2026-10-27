@@ -39,7 +39,7 @@ Where you cannot continue alone, hand the question to the session in your report
 
 ## Review
 
-Fix what each finding names, and nothing more. Push back on a finding that reaches past the slice.
+Fix what each finding names, and nothing more. The rule for one that reaches past the slice is under `Rounds`.
 
 ### Passes
 
@@ -64,7 +64,7 @@ A round is one `code-review` run; passes 1–3 run once, before round 1. Round 1
 ## Landing
 
 1. **Set the Status.** The implementing sub-agent sets the slice's Status for what it waits on, in the last commit, whose message ends `Reviewed in <N> rounds, by <model>`, naming the model the passes ran on:
-   - **A criterion waits on the Maintainer** (a converge, a live observation): `ready-for-human`. The rounds have already run, and a live check the Maintainer ticks afterwards needs no second one.
+   - **A criterion waits on the Maintainer**: `ready-for-human`, as the tracker defines it. The rounds have already run, and a live check the Maintainer ticks afterwards needs no second one.
    - **Every criterion is ticked**: `ready-for-closure`. Closing it waits on the Maintainer's word in the conversation.
 2. **Land.** The session lands the slice's branch with `bin/land` from the project's main checkout, without asking. A branch at `ready-for-human` lands too, so the Maintainer's check runs on main.
 
