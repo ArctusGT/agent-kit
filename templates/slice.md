@@ -21,7 +21,7 @@ Be specific about edge cases and error conditions.
 **Acceptance criteria:**
 - [ ] Specific, testable criterion 1
 - [ ] Specific, testable criterion 2
-- [ ] Specific, testable criterion 3
+- [ ] **Maintainer:** a criterion only the Maintainer can check, such as a live observation
 
 **Out of scope:**
 - Thing that should NOT be changed or addressed in this slice
