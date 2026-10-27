@@ -84,5 +84,5 @@ Closed slices are retained only in git. The code base is representative of work 
 
 Comments append to the bottom of the slice under a `## Comments` heading
 
-- Comments should start with the current date/timestamp included at the beginning or in the first line.
+- Each comment is committed on its own, so the commit dates it; the comment itself carries no date.
 - Comments should be separated by a horizontal rule. Permission granted in advance to agents to fix comments with missing horizontal rules
