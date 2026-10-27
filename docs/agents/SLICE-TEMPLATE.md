@@ -30,6 +30,15 @@ The agent needs to know when it's done. Every agent brief must have concrete, te
 - **Good:** "Running `gh issue list --label needs-triage` returns issues that have been through initial classification"
 - **Bad:** "Triage should work correctly"
 
+### Criteria name who checks them
+
+Whoever drafts the slice marks each criterion only the Maintainer can check,
+such as a converge or a live observation, by starting it with
+`**Maintainer:**`. An unmarked criterion is the Agent's to tick. The Agent
+reads who checks a criterion from the mark, never from its wording, and never
+ticks a marked one until the Maintainer reports it met, then ticks it on that
+report.
+
 ### Explicit scope boundaries
 
 State what is out of scope. This prevents the agent from *gold-plating* or making assumptions about adjacent features, or proposing unsolicited work.
@@ -114,6 +123,8 @@ checked for matches.
       appended to its "Prior requests" list rather than creating a duplicate
 - [ ] During triage, existing `.out-of-scope/` files are checked and surfaced
       when a new issue matches a prior rejection
+- [ ] **Maintainer:** In a real triage session, a request matching a prior
+      rejection is surfaced without being asked for
 
 **Out of scope:**
 - Automated matching (human confirms the match)

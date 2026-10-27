@@ -30,7 +30,7 @@ Implement the work described in the spec or slice, then put it through review pa
 
 1. **Implement.** Work in the worktree named after the slice (`<effort>/<NNN-slug>`, branch `worktree-<effort>/<NNN-slug>`), so the worktree and the slice name each other. Use /tdd where possible, at pre-agreed seams. Run typechecking and single test files regularly.
 2. **Prove it.** Get proof for every change you made. See `Proof`.
-3. **Commit once per acceptance criterion.** When a criterion is confirmed, tick it in the slice and commit the tick with the work that met it, using /commit-messages. Run the full test suite before the last commit.
+3. **Commit once per acceptance criterion.** Do the work for every criterion. A criterion marked `**Maintainer:**` (`docs/agents/SLICE-TEMPLATE.md`) is checked by the Maintainer, not you: leave it unticked, whatever its wording. When a criterion is confirmed, tick it in the slice and commit the tick with the work that met it, using /commit-messages. Run the full test suite before the last commit.
 4. **Run passes 1–3**, as `Passes` says, fixing each pass's findings, as `Review` says, before starting the next.
 5. **Stop before `code-review`.** Report to the session what was committed and each pass's findings, and stop, with no Status set. The session runs `code-review` and sends its findings: fix them, commit, and report again.
 6. **Set the Status** when the session says the rounds have ended, as `Landing` says, and report that it is committed.
@@ -65,7 +65,7 @@ A round is one `code-review` run; passes 1–3 run once, before round 1. Round 1
 ## Landing
 
 1. **Set the Status.** The implementing sub-agent sets the slice's Status for what it waits on, in the last commit, whose message ends `Reviewed in <N> rounds, by <model>`, naming the model the session noted for `code-review`:
-   - **A criterion waits on the Maintainer**: `ready-for-human`, as the tracker defines it. The rounds have already run, and a live check the Maintainer ticks afterwards needs no second one.
+   - Any criterion marked `**Maintainer:**` is unticked: `ready-for-human`, as the tracker's Closing slices says. The rounds have already run; the tracker's Closing slices says who ticks it afterwards, on the Maintainer's report, with no second review.
    - **Every criterion is ticked**: `ready-for-closure`. Closing it waits on the Maintainer's word in the conversation.
 2. **Land.** The session lands the slice's branch with `.agents/bin/land` from the project's main checkout, without asking. A branch at `ready-for-human` lands too, so the Maintainer's check runs on main.
 

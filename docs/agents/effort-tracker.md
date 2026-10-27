@@ -20,7 +20,7 @@ Read the file at the referenced path. The user will normally pass the path or th
 ## Reference docs
 
 - [SLICE-TEMPLATE.md](SLICE-TEMPLATE.md): what the slices should look like
-- [triage-lables.md](triage-labels.md): what labels we use for state roles 
+- [triage-labels.md](triage-labels.md): what labels we use for state roles 
 
 ## Effort Tracker Principles
 
@@ -74,14 +74,15 @@ Said skill should contain the method of drafting the slice itself, but it *MUST*
 ### Staying on track
 
 - The agent may present or maintain a scratchpad of acceptance criteria or specific human tasks it thinks the Maintainer is yet to address during the course of an individual chat. This is ephemeral, discarded at the end of a chat or the beginning of a new chat.
-- Agents may mark acceptance criteria as "done" themselves whilst informing the Maintainer
+- Agents may tick unmarked acceptance criteria themselves whilst informing the Maintainer; a criterion marked `**Maintainer:**` is ticked only once the Maintainer reports it met.
 - Agents may question the Maintainer if it believes acceptance criteria is unfulfilled or accidentally marked "done".
 
 ## Closing slices
 
 Closed slices are retained only in git. The code base is representative of work done.
 
-- The Status is `ready-for-human` while a criterion waits on the Maintainer, such as a converge or a live observation, and `ready-for-closure` once every criterion is ticked. `implement` says how the slice is reviewed before either is set, and when the branch lands.
+- The Status is `ready-for-human` while a criterion marked `**Maintainer:**` is unticked (see [SLICE-TEMPLATE.md](SLICE-TEMPLATE.md)), and `ready-for-closure` once every criterion is ticked. `implement` says how the slice is reviewed before either is set, and when the branch lands.
+- When the Maintainer reports a `**Maintainer:**` criterion met, the Agent ticks it on main and, once every criterion is ticked, sets `ready-for-closure`.
 - **The Maintainer's word to close a `ready-for-closure` slice is the confirmation to close it**
   - Agents remind the Maintainer which slices are waiting.
   - The Agent deletes the file and commits the deletion, with the commit message naming the instruction.
