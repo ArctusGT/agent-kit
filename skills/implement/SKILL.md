@@ -24,7 +24,7 @@ Implement the work described in the spec or slice, then put it through three rev
    1. /structural-review: does the code's shape match the domain?
    2. /method-review: is each method as clear as it could be?
    3. /hierarchical-documentation: names and comments. It edits in place; read its changes before committing them, and use its commit-message notes.
-4. **Fix within the slice.** Fix each finding, inside the slice's scope and commit the fix. A finding beyond it, such as a reframing that reaches past what the slice asked for, is named in the slice for the Maintainer instead. Done when every finding is one or the other.
+4. **Fix within the slice.** Fix each finding inside the slice's scope and commit the fix. A finding beyond it, such as a reframing that reaches past what the slice asked for, is named in the slice for the Maintainer instead. Done when every finding is one or the other.
 5. **Stop before `code-review`.** After the third review, report to the session what was committed and each review's findings, and stop. Do not set a Status yet. The session runs `code-review` in a separate sub-agent and sends its findings; fix them as step 4 says, and name any it leaves to the Maintainer in the slice.
 6. **Set the Status.** When the session says a `code-review` run left no finding unfixed and unnamed, set the slice's Status for what it waits on, in the last commit:
    - **A criterion waits on the Maintainer** (a converge, a live observation): `ready-for-human`. The reviews, `code-review` included, have already run; the tracker's closing rules say why a live check ticked later needs no second one.
