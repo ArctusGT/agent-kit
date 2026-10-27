@@ -50,8 +50,8 @@ phrase finds it faster than reading forward from the slice.
 ## Why this needs a rule
 
 Everything in the tracker pushes one way. A brief is "the authoritative
-specification", a slice without criteria is rejected outright, and staging
-makes a raised slice carry the Maintainer's authority. All of that is correct
+specification", a slice without criteria is rejected outright, and raising
+a slice on the Maintainer's word makes it carry the Maintainer's authority. All of that is correct
 for scope, and all of it reads as correct for truth.
 
 `solicited-work.md` warns that a slice invents the shape it describes — but

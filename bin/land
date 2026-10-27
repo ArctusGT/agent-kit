@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# Land agent worktree branches: merge each into the project's main with its kit
+# commits, push both mains, then remove what is left of the branches.
+#
+#   land <branch>...
+#
+# Run in the project's main checkout, with the kit (.agents) on a branch and
+# both clean. For each branch, which must be checked out in a worktree: fetches
+# the kit commit its .agents points at from the worktree's own .agents, merges
+# it into the kit's main, then merges the branch into the project's main with
+# .agents at the kit's new main, making both merge commits itself.
+#
+# Once every branch has merged it pushes the kit's main, then the project's.
+# It then removes each worktree, which takes the kit branch its .agents was on,
+# and the project branch, and deletes either from origin where one was pushed.
+#
+# It refuses, changing nothing and pushing nothing, where a worktree is locked
+# or holds uncommitted work (in it or its .agents), or a merge conflicts anywhere
+# but the .agents pointer; a merge made before the refusal is undone.
+#
+# Environment: none read; git's own (identity, config) applies.
+usage() {
+  awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
+}
+case ${1:-} in -h | --help) usage; exit 0 ;; '') usage >&2; exit 2 ;; esac
+
+die() { echo "land: $*" >&2; exit 1; }
+
+[[ $(git rev-parse --git-dir) == "$(git rev-parse --git-common-dir)" ]] ||
+  die "run in the project's main checkout, not a worktree"
+top=$(git rev-parse --show-toplevel)
+kit=$top/.agents
+main=$(git symbolic-ref --short HEAD) || die "the project is on no branch"
+kitmain=$(git -C "$kit" symbolic-ref --short HEAD) || die ".agents is on no branch"
+# $1 the checkout, $2 untracked-files mode: a worktree's untracked files are
+# lost with it, the main checkout's are not touched by a merge
+dirty() { git -C "$1" status --porcelain --untracked-files="$2" --ignore-submodules=none; }
+[[ -z $(dirty "$top" no) ]] || die "the main checkout has uncommitted changes"
+[[ -z $(dirty "$kit" no) ]] || die ".agents in the main checkout has uncommitted changes"
+
+# --- checks: nothing is changed until every branch passes ---
+declare -A wt kitbranch kitsha
+for b in "$@"; do
+  # the worktree having $b: its path and whether it is locked, which the
+  # porcelain lists after the branch, so a block is judged when it ends
+  IFS=$'\t' read -r path locked < <(git worktree list --porcelain | awk -v b="refs/heads/$b" '
+    /^worktree / {p = substr($0, 10); l = "unlocked"; hit = 0}
+    /^locked/ {l = "locked"}
+    $0 == "branch " b {hit = 1}
+    /^$/ && hit {print p "\t" l; exit}')
+  [[ -n ${path:-} ]] || die "$b: no worktree has it checked out"
+  [[ $locked == unlocked ]] || die "$b: its worktree is locked"
+  [[ -z $(dirty "$path" all) ]] || die "$b: its worktree has uncommitted work"
+  wt[$b]=$path
+  kitsha[$b]=$(git rev-parse "$b:.agents") || die "$b: no .agents pointer"
+  kitbranch[$b]=$(git -C "$path/.agents" symbolic-ref --short -q HEAD || true)
+done
+
+orig=$(git rev-parse HEAD)
+kitorig=$(git -C "$kit" rev-parse HEAD)
+undo() { # $1 what was refused
+  git merge --abort 2>/dev/null
+  git -C "$kit" merge --abort 2>/dev/null
+  git reset -q --hard "$orig"
+  git -C "$kit" reset -q --hard "$kitorig"
+  die "$1; both mains are as they were, nothing pushed"
+}
+
+# --- merges ---
+for b in "$@"; do
+  sha=${kitsha[$b]}
+  git -C "$kit" fetch -q "${wt[$b]}/.agents" HEAD || undo "$b: fetching its kit commits failed"
+  git -C "$kit" cat-file -e "$sha^{commit}" || undo "$b: its kit commit $sha is not in its .agents"
+  git -C "$kit" merge -q --no-ff -m "Merge ${kitbranch[$b]:-$sha} for $b" "$sha" >/dev/null ||
+    undo "$b: its kit commits conflict with the kit's $kitmain"
+
+  git merge -q --no-ff --no-commit "$b" >/dev/null 2>&1
+  git rev-parse -q --verify MERGE_HEAD >/dev/null || [[ -n $(git diff --name-only --diff-filter=U) ]] ||
+    undo "$b: the merge did not start"
+  conflicts=$(git diff --name-only --diff-filter=U)
+  [[ -z $conflicts || $conflicts == .agents ]] || undo "$b: conflicts in $(tr '\n' ' ' <<<"$conflicts")"
+  git update-index --cacheinfo "160000,$(git -C "$kit" rev-parse HEAD),.agents"
+  git commit -q --no-edit -m "Merge branch '$b'" || undo "$b: the merge commit failed"
+  echo "land: merged $b"
+done
+
+# --- push, kit first ---
+git -C "$kit" push -q origin "$kitmain" || die "pushing the kit's $kitmain failed; the project is not pushed"
+git push -q origin "$main" || die "pushing $main failed; the kit's $kitmain is already pushed"
+
+# --- clean up ---
+on_origin() { git -C "$1" ls-remote --exit-code --heads origin "$2" >/dev/null 2>&1; }
+for b in "$@"; do
+  # --force: a plain remove refuses any worktree holding a submodule
+  git worktree remove --force "${wt[$b]}" || echo "land: kept ${wt[$b]}, could not remove it" >&2
+  git branch -q -d "$b"
+  on_origin "$top" "$b" && git push -q origin --delete "$b"
+  kb=${kitbranch[$b]}
+  if [[ -n $kb && $kb != "$kitmain" ]]; then
+    on_origin "$kit" "$kb" && git -C "$kit" push -q origin --delete "$kb"
+  fi
+  echo "land: removed $b"
+done
+exit 0

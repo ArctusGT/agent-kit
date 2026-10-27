@@ -15,6 +15,6 @@ Implement the work described in the spec or slice, then put it through four revi
 4. **Fix within the slice.** Fix each finding inside the slice's scope and commit the fix. A finding beyond it, such as a reframing that reaches past what the slice asked for, is named in the slice for the Maintainer instead. Done when every finding is one or the other.
 5. **Report back.** Set the slice's Status for what it waits on:
    - **A criterion waits on the Maintainer** (a converge, a live observation): `ready-for-human`, in the last commit.
-   - **Every criterion is ticked**: `ready-for-closure`, left unstaged and uncommitted, so the Maintainer reviews it in the working tree. Staging it is the Maintainer's confirmation to close it.
+   - **Every criterion is ticked**: `ready-for-closure`, in the last commit. Closing it waits on the Maintainer's word in the conversation.
 
    Then report what was committed and anything left for the Maintainer.
