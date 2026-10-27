@@ -51,14 +51,13 @@ Specs are created using a skill. Agents defer to the maintainer to invoke a skil
   - Agents do not waste time asking for permission when they think a slice should be drafted
   - Slices **MUST** not duplicate acceptance criteria vaguely pre-existing in adjacent slices/efforts
     - Pre-existing slices may be enhanced, merged or contributed to after their initial creation with new requirements.
-    - A rework of a raised slice, any change to its scope or criteria, is left unstaged like a draft and holds only once the Maintainer stages it. Ticking a criterion or setting a Status is not a rework.
-  - A drafted slice is a file left unstaged and uncommitted in whichever checkout the Agent is working in, a worktree included: ready for the Maintainer to stage there as the confirmation to commit it. A worktree a slice is drafted in branches from the local default branch, not the remote's, so it sees every slice already raised.
+    - A rework of a raised slice, any change to its scope or criteria, is left uncommitted like a draft and holds only once the Maintainer says to raise it. Ticking a criterion or setting a Status is not a rework.
+  - A drafted slice is a file left uncommitted in whichever checkout the Agent is working in, a worktree included, for the Maintainer to read. A worktree a slice is drafted in branches from the local default branch, not the remote's, so it sees every slice already raised.
   - A committed slice lands on the default branch straight away. The Agent cherry-picks that one commit onto it in the main checkout, never the whole branch, so unreviewed work on the branch stays behind. A session isolated to a worktree cannot reach the main checkout, so the Agent leaves the worktree, keeping it, to land the slice.
-  - Only the maintainer stages a drafted slice.
-    - A slice the Maintainer has staged is accepted, and therefore raised. Git carries who staged it and when.
-    - The Agent commits a staged slice as it was staged, without being asked. At the start of a turn it checks `git diff --cached --name-only -- .efforts/`; a staged slice at `ready-for-closure` is closed instead (below).
-    - A slice left unstaged is undecided. Not rejected, not forgotten, and not the Agent's to revise or delete on its own
-    - Work on a slice starts only once it is raised. An unstaged draft, or the unstaged part of a rework, is not implemented.
+  - A slice is raised when the Maintainer says so in the conversation.
+    - The Agent commits the draft as written, and the commit message names the instruction.
+    - A slice left uncommitted is undecided. Not rejected, not forgotten, and not the Agent's to revise or delete on its own
+    - Work on a slice starts only once it is raised. An uncommitted draft, or the uncommitted part of a rework, is not implemented.
 - Said skill should contain the method of drafting the slice itself, but it *MUST* conform to the template shapes described in [SLICE-TEMPLATE.md](SLICE-TEMPLATE.md)
 - Agents may mark acceptance criteria as "done" themselves whilst informing the Maintainer
   - Agents may question the Maintainer if it believes acceptance criteria is unfulfilled or accidentally marked "done".
@@ -73,11 +72,11 @@ Closed slices are retained only in git. The code base is representative of work 
 
 - Agents close a slice only on the Maintainer's confirmation
 - While a criterion waits on the Maintainer, such as a converge or a live observation, the slice's Status is `ready-for-human`
-- Once every acceptance criterion is ticked, Agents set the Status to `ready-for-closure` and leave the slice **unstaged and uncommitted**
+- Once every acceptance criterion is ticked, Agents set the Status to `ready-for-closure`
   - Before setting it, the Agent runs the `code-review` skill on the commits that did the slice's work, and fixes what it finds or names it in the slice for the Maintainer.
-  - The Maintainer reviews it in the working tree, where every slice awaiting closure shows as one unstaged change. Agents remind the Maintainer which ones are waiting.
-- **Staging a `ready-for-closure` slice is the Maintainer's confirmation to close it**
-  - The Agent commits the slice as staged, then deletes the file and commits the deletion, with no further instruction. Both commits land on the default branch the way a raised slice does.
+  - The Maintainer reads it, and says in the conversation to close it. Agents remind the Maintainer which slices are waiting.
+- **The Maintainer's word to close a `ready-for-closure` slice is the confirmation to close it**
+  - The Agent deletes the file and commits the deletion, with the commit message naming the instruction. A slice still in a worktree's branch is closed there, and lands with the branch (`bin/land`).
   - The closing commit is the record, since git is the only place the slice survives: what the slice delivered, and anything named in it for the Maintainer that is still open.
   - The effort directory and spec may remain unless the maintainer instructs the agent to remove it
 
