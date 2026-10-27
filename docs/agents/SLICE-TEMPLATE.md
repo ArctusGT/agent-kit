@@ -36,7 +36,8 @@ Whoever drafts the slice marks each criterion only the Maintainer can check,
 such as a converge or a live observation, by starting it with
 `**Maintainer:**`. An unmarked criterion is the Agent's to tick. The Agent
 reads who checks a criterion from the mark, never from its wording, and never
-ticks a marked one until the Maintainer reports it met.
+ticks a marked one until the Maintainer reports it met, then ticks it on that
+report.
 
 ### Explicit scope boundaries
 
