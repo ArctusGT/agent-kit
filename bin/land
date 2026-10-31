@@ -8,7 +8,9 @@
 # both clean. For each branch, which must be checked out in a worktree: fetches
 # the kit commit its .agents points at from the worktree's own .agents, merges
 # it into the kit's main, then merges the branch into the project's main with
-# .agents at the kit's new main, making both merge commits itself.
+# .agents at the kit's new main, making both merge commits itself. A worktree
+# whose .agents was never initialised made no kit commits, so nothing is fetched
+# for it and the commit its .agents points at must already be in the kit.
 #
 # Once every branch has merged it pushes the kit's main, then the project's.
 # It then removes each worktree, which takes the kit branch its .agents was on,
@@ -53,7 +55,10 @@ for b in "$@"; do
   [[ -z $(dirty "$path" all) ]] || die "$b: its worktree has uncommitted work"
   wt[$b]=$path
   kitsha[$b]=$(git rev-parse "$b:.agents") || die "$b: no .agents pointer"
-  kitbranch[$b]=$(git -C "$path/.agents" symbolic-ref --short -q HEAD || true)
+  # an uninitialised .agents has no .git, and git -C there would answer for the project
+  kitbranch[$b]=
+  [[ -e $path/.agents/.git ]] &&
+    kitbranch[$b]=$(git -C "$path/.agents" symbolic-ref --short -q HEAD || true)
 done
 
 orig=$(git rev-parse HEAD)
@@ -69,7 +74,9 @@ undo() { # $1 what was refused
 # --- merges ---
 for b in "$@"; do
   sha=${kitsha[$b]}
-  git -C "$kit" fetch -q "${wt[$b]}/.agents" HEAD || undo "$b: fetching its kit commits failed"
+  if [[ -e ${wt[$b]}/.agents/.git ]]; then
+    git -C "$kit" fetch -q "${wt[$b]}/.agents" HEAD || undo "$b: fetching its kit commits failed"
+  fi
   git -C "$kit" cat-file -e "$sha^{commit}" || undo "$b: its kit commit $sha is not in its .agents"
   git -C "$kit" merge -q --no-ff -m "Merge ${kitbranch[$b]:-$sha} for $b" "$sha" >/dev/null ||
     undo "$b: its kit commits conflict with the kit's $kitmain"
