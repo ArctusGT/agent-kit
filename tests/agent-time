@@ -48,7 +48,7 @@ class Fake(http.server.BaseHTTPRequestHandler):
         if Fake.down:
             return self.reply(500, {})
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-        wanted = set(q["labels"][0].split(","))  # GitLab's filter is AND: on 19.4.5, GET /projects/:path/issues?labels=timesheet,code:X returned only the issue with both
+        wanted = set(q["labels"][0].split(","))  # AND, as GET /projects/:path/issues?labels=timesheet,code:X returned only the issue with both
         self.reply(200, [{"id": i, "iid": n} for i, n, labels in Fake.tickets if wanted <= set(labels)])
 
     def do_POST(self):
@@ -121,8 +121,8 @@ class Case(unittest.TestCase):
         self.assertEqual(at.blocks([("S", 0), ("S", 600), ("S", 2400)], True), [(0, 2400, False)])
 
     def test_session_end_logs_blocks_with_note_and_token(self):
-        for t in (0, 100, 5000, 5300):
-            self.event("UserPromptSubmit", at_time=T0 + t)
+        for t, name in ((0, "UserPromptSubmit"), (100, "Stop"), (5000, "UserPromptSubmit"), (5300, "Stop")):
+            self.event(name, at_time=T0 + t)
         self.event("SessionEnd", at_time=T0 + 6000)
         self.assertEqual([(i["timeSpent"], i["issuableId"]) for _, i in Fake.logged],
                          [("100s", "gid://gitlab/Issue/900"), ("300s", "gid://gitlab/Issue/900")])
@@ -270,6 +270,18 @@ class Case(unittest.TestCase):
         Fake.deny = 0
         self.event("SessionStart", sid="s3", at_time=T0 + 2100)
         self.assertEqual(len(Fake.logged), 1)
+
+    def test_a_session_ending_mid_turn_logs_the_turn_up_to_its_end(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("SessionEnd", at_time=T0 + 500)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["500s"])
+
+    def test_a_turn_cut_short_by_the_next_prompt_ran_until_it(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("UserPromptSubmit", at_time=T0 + 200)
+        self.event("Stop", at_time=T0 + 260)
+        self.event("SessionEnd", at_time=T0 + 270)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["260s"])
 
     def test_timesheet_label_is_required_with_the_code(self):
         self.run_session(self.worktree_slice("**code:** 99999.9"))  # the only such issue lacks `timesheet`

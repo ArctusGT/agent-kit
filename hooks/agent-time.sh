@@ -17,7 +17,7 @@
 #   "SessionEnd": [{ "hooks": [{ "type": "command",
 #     "command": "\"$CLAUDE_PROJECT_DIR\"/.agents/hooks/agent-time.sh" }] }]
 #
-# Needs python3. Takes no arguments; --help prints this header.
+# Takes no arguments; --help prints this header.
 if [ "${1:-}" = "--help" ]; then
   awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"
   exit 0

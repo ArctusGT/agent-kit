@@ -6,9 +6,10 @@
   agent_time.py dry-run          print which blocks would be logged where, for every session of the project the
                                  current directory's setting names. Reads the forge, writes nothing.
 
-A hook notes the moment of each prompt sent (UserPromptSubmit) and reply finished (Stop). A turn, from
-a prompt to the reply that ends it, is active throughout, however long. Turns and moments more than 30 minutes
-apart fall in separate blocks, and a block whose turn is still running is never logged until its session ends. At SessionStart the blocks that are over, of every session that
+A hook notes the moment of each prompt sent (UserPromptSubmit), reply finished (Stop) and session end. A turn,
+from a prompt to the reply that ends it (or to the next prompt or the session's end, if no reply comes), is active
+throughout, however long. Turns more than 30 minutes apart fall in separate blocks, and a block whose turn is
+still running is not logged by another session's flush. At SessionStart the blocks that are over, of every session that
 worked for the same forge project (whichever checkout or worktree it ran in), are logged; at SessionEnd all of
 this session's blocks are too, by a detached child so the session never waits.
 A block is logged by `timelogCreate` on the project's open `timesheet` issue labelled `code:<code>`. A session has
@@ -26,7 +27,7 @@ A repo with no setting or no token logs nothing and says nothing. Every hook exi
 
 Environment: AGENT_TIME_CONFIG_DIR (default ~/.config/agent-time), AGENT_TIME_STATE_DIR
 (default ~/.local/state/agent-time). Per session <id>: <id>.json (project, code; written by hooks), <id>.moments
-(a kind, P or S, and an epoch second per line; hooks append), <id>.status (each block logged or void, and the
+(a kind, P, S or E, and an epoch second per line; hooks append), <id>.status (each block logged or void, and the
 notices already written for it; the flush writes); plus `notices`.
 `hook` and a real flush change the state directory and, through the forge, the ticket; `dry-run` changes neither.
 """
@@ -74,22 +75,24 @@ def state_dir():
 
 
 def blocks(moments, finished, gap=GAP):
-    """[(start, end, running)] of a session's moments, each ("P", t) a prompt sent or ("S", t) a reply finished.
+    """[(start, end, running)] of a session's moments: ("P", t) a prompt sent, ("S", t) a reply finished, ("E", t) the
+    session ended.
 
-    A turn, a prompt to the reply that ends it, is active throughout, however long. Turns and lone moments more
-    than `gap` seconds apart fall in separate blocks. A prompt still unanswered makes its block `running`, unless the
-    session is `finished`, when it counts as a lone moment.
+    A turn, a prompt to the reply that ends it, is active throughout, however long. A turn the next prompt or the
+    session's end cuts short (no reply came) ran until then. Turns and lone replies more than `gap` seconds apart
+    fall in separate blocks. A prompt still unanswered makes its block `running`, unless the session is `finished`,
+    when it counts as a lone moment.
     """
     spans, waiting = [], None
     for kind, t in moments:
         if kind == "P":
             if waiting is not None:
-                spans.append((waiting, waiting))  # interrupted by the next prompt
+                spans.append((waiting, t))  # interrupted: it ran until the next prompt
             waiting = t
         elif waiting is not None:
             spans.append((waiting, t))
             waiting = None
-        else:
+        elif kind == "S":
             spans.append((t, t))
     running = waiting is not None and not finished
     if waiting is not None and finished:
@@ -179,7 +182,7 @@ class Forge:
             raise
 
     def ticket(self, project, code):
-        """The lowest-numbered open issue labelled `timesheet` and `code:<code>` (both: the filter is AND), or None."""
+        """The lowest-numbered open issue labelled `timesheet` and `code:<code>` (both: checked with GET /projects/:path/issues?labels=timesheet,code:X, which returned only the issue with both), or None."""
         q = urllib.parse.urlencode({"labels": "timesheet,code:" + code, "state": "opened", "per_page": 100})
         issues = self._call("/api/v4/projects/%s/issues?%s" % (urllib.parse.quote(project, safe=""), q))
         if not issues:
@@ -316,7 +319,11 @@ def plan(project, forge, now, ending=None, everything=False):
 
 
 def flush(project, forge, now, ending=None):
-    """Do what plan() says; the flush alone writes <id>.status and `notices`. One flush at a time."""
+    """Do what plan() says; the flush alone writes <id>.status and `notices`.
+
+    One flush at a time: a busy lock skips this one, and its blocks go at a later flush. Delivery is at-least-once:
+    a write that times out after the forge took it is logged again.
+    """
     sdir = state_dir()
     with open(os.path.join(sdir, "lock"), "w") as lock:
         try:
@@ -392,7 +399,7 @@ def detached(fn):
 
 
 def note_moment(sid, kind, setting, cwd, now):
-    """Append a moment, kind "P" (prompt) or "S" (stop), to the session's file; make its record, or fix its code, as the first slice worktree comes."""
+    """Append a moment, kind "P" (prompt), "S" (stop) or "E" (session end), to the session's file; make its record, or fix its code, as the first slice worktree comes."""
     meta_path = session_file(sid, ".json")
     meta = read_json(meta_path, None)
     # "fixed": the code is settled once the session has been in a slice's worktree, so a later move cannot change it.
@@ -419,8 +426,9 @@ def hook(event, now=None, flush_in_child=True):
         return
     sdir = state_dir()
     os.makedirs(sdir, exist_ok=True)
-    if name in ("UserPromptSubmit", "Stop"):
-        note_moment(sid, "P" if name == "UserPromptSubmit" else "S", setting, cwd, now)
+    kinds = {"UserPromptSubmit": "P", "Stop": "S", "SessionEnd": "E"}
+    if name in kinds:
+        note_moment(sid, kinds[name], setting, cwd, now)
     if name == "SessionStart":
         print_notices(sdir)
     if name in ("SessionStart", "SessionEnd"):
