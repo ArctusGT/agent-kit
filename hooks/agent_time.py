@@ -8,7 +8,7 @@
 
 A hook notes the moment of each prompt sent (UserPromptSubmit), reply finished (Stop) and session end. A turn,
 from a prompt to the reply that ends it, is active throughout, however long; one that no reply ends (the next
-prompt or the session's end comes first) counts at most 30 minutes. Turns more than 30 minutes apart fall in separate blocks, and a block whose turn
+prompt or the session's end comes first) counts at most GAP (30 minutes). Turns more than GAP apart fall in separate blocks, and a block whose turn
 is still running is not logged by another session's flush. At SessionStart the blocks that are over, of every session that
 worked for the same forge project (whichever checkout or worktree it ran in), are logged; at SessionEnd all of
 this session's blocks are too, by a detached child so the session never waits.
