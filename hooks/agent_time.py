@@ -27,7 +27,7 @@ A repo with no setting or no token logs nothing and says nothing. Every hook exi
 
 Environment: AGENT_TIME_CONFIG_DIR (default ~/.config/agent-time), AGENT_TIME_STATE_DIR
 (default ~/.local/state/agent-time). Per session <id>: <id>.json (project, code; written by hooks), <id>.moments
-(a kind, P, S or E, and an epoch second per line; hooks append), <id>.status (each block logged or void, and the
+(a kind, P, S or E, and an epoch second per line; hooks append), <id>.status (how far each block is logged, and the
 notices already written for it; the flush writes); plus `notices`.
 `hook` and a real flush change the state directory and, through the forge, the ticket; `dry-run` changes neither.
 """
@@ -56,7 +56,11 @@ class Ticket(NamedTuple):
 
 
 class Item(NamedTuple):
-    """One block and what to do with it: `log`, `void` (nothing to log), `no-ticket`, or `refused` (error)."""
+    """One block and what to do with it: `log`, `void` (nothing to log yet), `no-ticket`, or `refused` (error).
+
+    `start` names the block. `since` is how far an earlier flush logged it, 0 if it has not, so a block that
+    grew since (a turn that was running finished) is logged from `since`, never twice.
+    """
     session: str
     start: int
     end: int
@@ -64,6 +68,12 @@ class Item(NamedTuple):
     ticket: "Ticket | None"
     action: str
     error: str = ""
+    since: int = 0
+
+    @property
+    def begin(self):
+        """Where the part to log starts."""
+        return self.since or self.start
 
 
 def config_dir():
@@ -80,8 +90,8 @@ def blocks(moments, finished, gap=GAP):
 
     A turn, a prompt to the reply that ends it, is active throughout, however long. A turn the next prompt or the
     session's end cuts short (no reply came) ran until then, but at most `gap` seconds. Turns and lone replies more than `gap` seconds apart
-    fall in separate blocks. A prompt still unanswered makes its block `running`, unless the session is `finished`,
-    when it counts as a lone moment.
+    fall in separate blocks. A prompt still unanswered is a block of its own, `running`, so the turns before it are
+    not held back. A `finished` session with no E moment (dry-run, or a crash) counts that prompt as a lone moment.
     """
     spans, waiting = [], None
     for kind, t in moments:
@@ -94,7 +104,6 @@ def blocks(moments, finished, gap=GAP):
             waiting = None
         elif kind == "S":
             spans.append((t, t))
-    running = waiting is not None and not finished
     if waiting is not None and finished:
         spans.append((waiting, waiting))
     out = []
@@ -103,12 +112,10 @@ def blocks(moments, finished, gap=GAP):
             out[-1][1] = max(out[-1][1], end)
         else:
             out.append([start, end])
-    if running:
-        if out and waiting - out[-1][1] <= gap:
-            out[-1][1] = waiting
-        else:
-            out.append([waiting, waiting])
-    return [(a, b, running and i == len(out) - 1) for i, (a, b) in enumerate(out)]
+    result = [(a, b, False) for a, b in out]
+    if waiting is not None and not finished:
+        result.append((waiting, waiting, True))  # the running turn is a block of its own
+    return result
 
 
 def read_setting(path):
@@ -291,7 +298,7 @@ def lookup(forge, project, code, found):
 
 
 def plan(project, forge, now, ending=None, everything=False):
-    """Every block of `project` not yet logged or void, that is over, with what to do with it.
+    """Every block of `project` not yet logged to its end, that is over, with what to do with it.
 
     A forge that cannot be reached leaves its blocks out, to come again. Reads the forge for tickets, writes nothing.
     """
@@ -301,20 +308,21 @@ def plan(project, forge, now, ending=None, everything=False):
         session_blocks = blocks(moments, finished)
         for block in session_blocks:
             start, end, _ = block
-            if str(start) in status or not is_over(block, session_blocks[-1], now, finished):
+            since = status.get(str(start), 0)  # how far an earlier flush logged this block
+            if end <= since or not is_over(block, session_blocks[-1], now, finished):
                 continue
             code = meta["code"]
-            if end - start < 1:
-                items.append(Item(sid, start, end, code, None, "void"))
+            if end - (since or start) < 1:
+                items.append(Item(sid, start, end, code, None, "void", since=since))
                 continue
             try:
                 ticket = lookup(forge, project, code, found)
             except Refused as e:
-                items.append(Item(sid, start, end, code, None, "refused", str(e)))
+                items.append(Item(sid, start, end, code, None, "refused", str(e), since))
             except Exception:
                 continue  # unreachable: keep the block for next time, say nothing
             else:
-                items.append(Item(sid, start, end, code, ticket, "log" if ticket else "no-ticket"))
+                items.append(Item(sid, start, end, code, ticket, "log" if ticket else "no-ticket", since=since))
     return items
 
 
@@ -337,7 +345,7 @@ def flush(project, forge, now, ending=None):
 def attempt(item, forge):
     """Log the item's block: None if the forge took it, else the reason it refused. Unreachable (a 5xx too) raises."""
     try:
-        return forge.log(item.ticket, item.start, item.end - item.start, summary_for(item.session))
+        return forge.log(item.ticket, item.begin, item.end - item.begin, summary_for(item.session))
     except urllib.error.HTTPError as e:
         if e.code >= 500:
             raise
@@ -350,7 +358,7 @@ def record(sdir, project, forge, item):
     status = read_json(path, {})
     reason = None
     if item.action == "void":
-        status[str(item.start)] = "void"
+        status[str(item.start)] = item.end  # accounted for through its end, nothing to log
     elif item.action == "no-ticket":
         reason = "no open timesheet ticket labelled code:%s" % item.code
     elif item.action == "refused":
@@ -361,7 +369,7 @@ def record(sdir, project, forge, item):
         except Exception:
             return  # unreachable: the block stays for next time, silently
         if reason is None:
-            status[str(item.start)] = "logged"
+            status[str(item.start)] = item.end
     if reason is not None:
         noticed = status.setdefault("noticed", [])
         key = "%d:%s" % (item.start, reason)
@@ -441,7 +449,7 @@ def hook(event, now=None, flush_in_child=True):
 
 def describe(item, project):
     """What dry-run says of a planned item."""
-    when = datetime.datetime.fromtimestamp(item.start, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    when = datetime.datetime.fromtimestamp(item.begin, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     if item.action == "log":
         outcome = "%s#%d" % (project, item.ticket.iid)
     elif item.action == "void":
@@ -450,11 +458,12 @@ def describe(item, project):
         outcome = "no ticket, kept unlogged"
     else:
         outcome = item.error + ", kept unlogged"
-    return "%s: %s %ds code:%s -> %s | %s" % (item.session, when, item.end - item.start, item.code, outcome,
+    return "%s: %s %ds code:%s -> %s | %s" % (item.session, when, item.end - item.begin, item.code, outcome,
                                                summary_for(item.session))
 
 
 def dry_run(setting, now):
+    """Print the plan for every session of the project, treating each as ended; changes nothing."""
     token = token_for(setting["project"])
     if not token:
         print("no token for %s, would log nothing" % setting["project"])

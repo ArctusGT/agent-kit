@@ -186,7 +186,7 @@ class Case(unittest.TestCase):
         self.run_session(self.worktree_slice("**code:** 99999.9"))
         self.assertEqual(Fake.logged, [])
         with open(self.tmp.name + "/state/s1.status") as f:
-            self.assertNotIn("logged", f.read())
+            self.assertEqual(set(json.load(f)), {"noticed"})  # no block logged
         self.assertIn("g/p code:99999.9", self.notices())
 
     def test_no_setting_logs_nothing_and_keeps_nothing(self):
@@ -289,6 +289,20 @@ class Case(unittest.TestCase):
         self.event("Stop", at_time=T0 + 5 * 3600 + 60)
         self.event("SessionEnd", at_time=T0 + 5 * 3600 + 70)
         self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["1800s", "60s"])
+
+    def test_a_completed_turn_is_logged_while_a_later_prompt_is_still_open(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("Stop", at_time=T0 + 600)
+        self.event("UserPromptSubmit", at_time=T0 + 1000)  # unanswered; no SessionEnd
+        self.event("SessionStart", sid="s2", at_time=T0 + 5000)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["600s"])
+
+    def test_a_block_logged_early_and_then_extended_logs_only_the_rest(self):
+        self.test_a_completed_turn_is_logged_while_a_later_prompt_is_still_open()
+        self.event("Stop", at_time=T0 + 5000)  # the open turn finishes: one block 0..5000
+        self.event("SessionEnd", at_time=T0 + 5010)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["600s", "4400s"])
+        self.assertEqual(Fake.logged[1][1]["spentAt"], "2023-11-14T22:23:20Z")  # T0 + 600
 
     def test_timesheet_label_is_required_with_the_code(self):
         self.run_session(self.worktree_slice("**code:** 99999.9"))  # the only such issue lacks `timesheet`
