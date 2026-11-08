@@ -7,9 +7,9 @@
                                  current directory's setting names. Reads the forge, writes nothing.
 
 A hook notes the moment of each prompt sent (UserPromptSubmit), reply finished (Stop) and session end. A turn,
-from a prompt to the reply that ends it (or to the next prompt or the session's end, if no reply comes), is active
-throughout, however long. Turns more than 30 minutes apart fall in separate blocks, and a block whose turn is
-still running is not logged by another session's flush. At SessionStart the blocks that are over, of every session that
+from a prompt to the reply that ends it, is active throughout, however long; one that no reply ends (the next
+prompt or the session's end comes first) counts at most 30 minutes. Turns more than 30 minutes apart fall in separate blocks, and a block whose turn
+is still running is not logged by another session's flush. At SessionStart the blocks that are over, of every session that
 worked for the same forge project (whichever checkout or worktree it ran in), are logged; at SessionEnd all of
 this session's blocks are too, by a detached child so the session never waits.
 A block is logged by `timelogCreate` on the project's open `timesheet` issue labelled `code:<code>`. A session has
@@ -79,7 +79,7 @@ def blocks(moments, finished, gap=GAP):
     session ended.
 
     A turn, a prompt to the reply that ends it, is active throughout, however long. A turn the next prompt or the
-    session's end cuts short (no reply came) ran until then. Turns and lone replies more than `gap` seconds apart
+    session's end cuts short (no reply came) ran until then, but at most `gap` seconds. Turns and lone replies more than `gap` seconds apart
     fall in separate blocks. A prompt still unanswered makes its block `running`, unless the session is `finished`,
     when it counts as a lone moment.
     """
@@ -87,10 +87,10 @@ def blocks(moments, finished, gap=GAP):
     for kind, t in moments:
         if kind == "P":
             if waiting is not None:
-                spans.append((waiting, t))  # interrupted: it ran until the next prompt
+                spans.append((waiting, min(t, waiting + gap)))  # cut short, capped
             waiting = t
         elif waiting is not None:
-            spans.append((waiting, t))
+            spans.append((waiting, t if kind == "S" else min(t, waiting + gap)))
             waiting = None
         elif kind == "S":
             spans.append((t, t))

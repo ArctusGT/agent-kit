@@ -283,6 +283,13 @@ class Case(unittest.TestCase):
         self.event("SessionEnd", at_time=T0 + 270)
         self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["260s"])
 
+    def test_a_turn_cut_short_counts_at_most_30_minutes(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("UserPromptSubmit", at_time=T0 + 5 * 3600)
+        self.event("Stop", at_time=T0 + 5 * 3600 + 60)
+        self.event("SessionEnd", at_time=T0 + 5 * 3600 + 70)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["1800s", "60s"])
+
     def test_timesheet_label_is_required_with_the_code(self):
         self.run_session(self.worktree_slice("**code:** 99999.9"))  # the only such issue lacks `timesheet`
         self.assertEqual(Fake.logged, [])
