@@ -28,7 +28,7 @@ is this project's.
 The hooks in `.agents/hooks/` are not symlinked. `link.sh` merges the entry from
 each hook's "Wire it up" header into the project's `.claude/settings.json`,
 leaving the file's other settings and hooks alone, and skips a hook whose
-command is already there. Wiring needs `jq`, which the hooks need anyway.
+command is already there. Wiring needs `jq`, and so do the `block-*` hooks; the agent-time hook needs `python3`.
 
 Some skills, `pentest` and `retro` among them, set `disable-model-invocation`.
 They run only when typed as a slash command (`/retro`), and an agent asked

@@ -1,0 +1,313 @@
+#!/usr/bin/env python3
+"""Check hooks/agent_time.py against a fake forge: blocks, logging once, codes, no setting or token.
+
+  tests/agent-time
+
+Serves a fake GitLab on a loopback port and keeps config, state and repos under a
+temporary directory, so nothing real is read or written. Exits non-zero on a failure.
+"""
+import contextlib
+import http.server
+import io
+import json
+import os
+import sys
+import tempfile
+import threading
+import unittest
+import urllib.parse
+
+if "-h" in sys.argv or "--help" in sys.argv:
+    print(__doc__.strip())
+    sys.exit(0)
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "hooks"))
+import agent_time as at  # noqa: E402
+
+T0 = 1_700_000_000
+
+
+class Fake(http.server.BaseHTTPRequestHandler):
+    tickets = []   # (id, iid, labels) of the open issues
+    logged = []    # graphql inputs received
+    down = False   # answer 500 to everything
+    deny = 0       # answer this status to everything, if set
+    refuse = ""    # an error for timelogCreate to answer with
+
+    def log_message(self, *a):
+        pass
+
+    def reply(self, status, body):
+        self.send_response(status)
+        self.end_headers()
+        self.wfile.write(json.dumps(body).encode())
+
+    def do_GET(self):
+        if Fake.deny:
+            return self.reply(Fake.deny, {})
+        if Fake.down:
+            return self.reply(500, {})
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        wanted = set(q["labels"][0].split(","))  # AND, as GET /projects/:path/issues?labels=timesheet,code:X returned only the issue with both
+        self.reply(200, [{"id": i, "iid": n} for i, n, labels in Fake.tickets if wanted <= set(labels)])
+
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if Fake.deny:
+            return self.reply(Fake.deny, {})
+        if Fake.down:
+            return self.reply(500, {})
+        Fake.logged.append((self.headers["PRIVATE-TOKEN"], body["variables"]["input"]))
+        if Fake.refuse:
+            return self.reply(200, {"data": {"timelogCreate": {"timelog": None, "errors": [Fake.refuse]}}})
+        self.reply(200, {"data": {"timelogCreate": {"timelog": {"id": "1"}, "errors": []}}})
+
+
+class Case(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.server = http.server.HTTPServer(("127.0.0.1", 0), Fake)
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+        cls.url = "http://127.0.0.1:%d" % cls.server.server_port
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        t = self.tmp.name
+        os.environ["AGENT_TIME_CONFIG_DIR"] = t + "/config"
+        os.environ["AGENT_TIME_STATE_DIR"] = t + "/state"
+        os.makedirs(t + "/config")
+        self.repo = t + "/repo"
+        os.makedirs(self.repo)
+        Fake.tickets = [(900, 3, ["timesheet", "code:25050.9283"]), (901, 4, ["timesheet", "code:11111.1"]),
+                        (902, 5, ["code:99999.9"])]  # not a timesheet issue
+        Fake.logged, Fake.down, Fake.deny, Fake.refuse = [], False, 0, ""
+        self.setting(code="25050.9283")
+        self.token("g-p", "secret-token")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def setting(self, **over):
+        s = {"forge": self.url, "project": "g/p", "code": "25050.9283", **over}
+        with open(self.repo + "/.agent-time.json", "w") as f:
+            json.dump(s, f)
+
+    def token(self, name, value):
+        with open("%s/config/%s.token" % (self.tmp.name, name), "w") as f:
+            f.write(value + "\n")
+
+    def event(self, name, sid="s1", cwd=None, at_time=T0):
+        at.hook({"session_id": sid, "cwd": cwd or self.repo, "hook_event_name": name},
+                now=at_time, flush_in_child=False)
+
+    def notices(self):
+        with open(self.tmp.name + "/state/notices") as f:
+            return f.read()
+
+    def state_files(self):
+        d = self.tmp.name + "/state"
+        return os.listdir(d) if os.path.isdir(d) else []
+
+    def test_gap_over_30_minutes_splits(self):
+        self.assertEqual(at.blocks([("S", 0), ("S", 1800), ("S", 3601)], True),
+                         [(0, 1800, False), (3601, 3601, False)])
+
+    def test_gap_of_exactly_30_minutes_does_not_split(self):
+        self.assertEqual(at.blocks([("S", 0), ("S", 600), ("S", 2400)], True), [(0, 2400, False)])
+
+    def test_session_end_logs_blocks_with_note_and_token(self):
+        for t, name in ((0, "UserPromptSubmit"), (100, "Stop"), (5000, "UserPromptSubmit"), (5300, "Stop")):
+            self.event(name, at_time=T0 + t)
+        self.event("SessionEnd", at_time=T0 + 6000)
+        self.assertEqual([(i["timeSpent"], i["issuableId"]) for _, i in Fake.logged],
+                         [("100s", "gid://gitlab/Issue/900"), ("300s", "gid://gitlab/Issue/900")])
+        self.assertEqual({tok for tok, _ in Fake.logged}, {"secret-token"})
+        self.assertIn("agent time", Fake.logged[0][1]["summary"])
+        self.assertIn("s1", Fake.logged[0][1]["summary"])
+
+    def test_logged_block_is_not_logged_again(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("Stop", at_time=T0 + 60)
+        self.event("SessionEnd", at_time=T0 + 70)
+        self.event("SessionStart", sid="s2", at_time=T0 + 99999)
+        self.event("SessionEnd", sid="s2", at_time=T0 + 100000)
+        self.assertEqual(len(Fake.logged), 1)
+
+    def test_unlogged_block_is_logged_at_next_session_start_once(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("Stop", at_time=T0 + 60)
+        Fake.down = True
+        self.event("SessionEnd", at_time=T0 + 70)
+        self.assertEqual(Fake.logged, [])
+        Fake.down = False
+        self.event("SessionStart", sid="s2", at_time=T0 + 99999)
+        self.assertEqual(len(Fake.logged), 1)
+        self.event("SessionEnd", sid="s2", at_time=T0 + 100000)
+        self.assertEqual(len(Fake.logged), 1)
+
+    def test_a_session_that_never_ended_is_logged_only_once_its_block_is_over(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("Stop", at_time=T0 + 60)
+        self.event("SessionStart", sid="s2", at_time=T0 + 120)  # s1 may still be active
+        self.assertEqual(Fake.logged, [])
+        self.event("SessionStart", sid="s3", at_time=T0 + 60 + 1801)
+        self.assertEqual(len(Fake.logged), 1)
+
+    def worktree_slice(self, code_line):
+        wt = self.repo + "/.claude/worktrees/fx/001-a"
+        os.makedirs(wt + "/.efforts/fx")
+        with open(wt + "/.efforts/fx/001-a.md", "w") as f:
+            f.write("## a\n\n**Status:** ready-for-agent\n%s\n" % code_line)
+        return wt
+
+    def run_session(self, cwd):
+        self.event("UserPromptSubmit", cwd=cwd, at_time=T0)
+        self.event("Stop", cwd=cwd, at_time=T0 + 60)
+        self.event("SessionEnd", cwd=cwd, at_time=T0 + 70)
+
+    def test_slice_code_picks_its_ticket(self):
+        self.run_session(self.worktree_slice("**code:** 11111.1"))
+        self.assertEqual([i["issuableId"] for _, i in Fake.logged], ["gid://gitlab/Issue/901"])
+
+    def test_slice_without_code_takes_the_default(self):
+        self.run_session(self.worktree_slice("**blocked-by:**"))
+        self.assertEqual([i["issuableId"] for _, i in Fake.logged], ["gid://gitlab/Issue/900"])
+
+    def test_other_session_takes_the_default(self):
+        self.run_session(self.repo)
+        self.assertEqual([i["issuableId"] for _, i in Fake.logged], ["gid://gitlab/Issue/900"])
+
+    def test_code_with_no_ticket_keeps_the_block_and_leaves_a_notice(self):
+        self.run_session(self.worktree_slice("**code:** 99999.9"))
+        self.assertEqual(Fake.logged, [])
+        with open(self.tmp.name + "/state/s1.status") as f:
+            self.assertEqual(set(json.load(f)), {"noticed"})  # no block logged
+        self.assertIn("g/p code:99999.9", self.notices())
+
+    def test_no_setting_logs_nothing_and_keeps_nothing(self):
+        os.remove(self.repo + "/.agent-time.json")
+        self.run_session(self.repo)
+        self.assertEqual((Fake.logged, self.state_files()), ([], []))
+
+    def test_a_nearer_invalid_setting_does_not_fall_through_to_a_parent(self):
+        sub = self.repo + "/sub"
+        os.makedirs(sub)
+        with open(sub + "/.agent-time.json", "w") as f:
+            f.write('{"forge": "%s"}' % self.url)  # no project or code
+        self.run_session(sub)
+        self.assertEqual((Fake.logged, self.state_files()), ([], []))
+
+    def test_no_token_logs_nothing(self):
+        os.remove(self.tmp.name + "/config/g-p.token")
+        self.run_session(self.repo)
+        self.assertEqual(Fake.logged, [])
+
+    def test_dry_run_writes_nothing(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("Stop", at_time=T0 + 60)
+        at.dry_run(at.find_setting(self.repo), T0 + 10**6)
+        self.assertEqual((Fake.logged, "s1.status" in self.state_files()), ([], False))
+
+    def test_a_block_left_by_another_checkout_of_the_project_is_logged(self):
+        other = self.tmp.name + "/other"
+        os.makedirs(other)
+        with open(other + "/.agent-time.json", "w") as f:
+            json.dump({"forge": self.url, "project": "g/p", "code": "25050.9283"}, f)
+        self.event("UserPromptSubmit", cwd=other, at_time=T0)
+        self.event("Stop", cwd=other, at_time=T0 + 60)
+        self.event("SessionStart", sid="s2", at_time=T0 + 99999)  # in self.repo
+        self.assertEqual(len(Fake.logged), 1)
+
+    def test_a_session_keeps_the_code_its_first_slice_worktree_gave_it(self):
+        wt = self.worktree_slice("**code:** 11111.1")
+        self.event("UserPromptSubmit", at_time=T0)  # outside any slice: default so far
+        self.event("Stop", cwd=wt, at_time=T0 + 60)  # first moment in a slice worktree fixes the code
+        with open(wt + "/.efforts/fx/001-a.md", "w") as f:
+            f.write("**code:** 25050.9283\n")  # edited since
+        self.event("Stop", cwd=self.repo, at_time=T0 + 120)
+        self.event("SessionEnd", at_time=T0 + 130)
+        self.assertEqual([i["issuableId"] for _, i in Fake.logged], ["gid://gitlab/Issue/901"])
+
+    def test_a_refused_block_stays_unlogged_and_is_noticed_once(self):
+        Fake.refuse = "token cannot log time"
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("Stop", at_time=T0 + 60)
+        self.event("SessionEnd", at_time=T0 + 70)
+        with contextlib.redirect_stdout(io.StringIO()) as shown:
+            self.event("SessionStart", sid="s2", at_time=T0 + 2000)  # prints the notice, retries the block
+        self.assertEqual(len(Fake.logged), 2)
+        self.assertEqual(shown.getvalue().count("token cannot log time"), 1)
+        self.assertIn("g/p code:25050.9283", shown.getvalue())
+        self.assertNotIn("notices", self.state_files())  # the retry's refusal is the same block and reason
+        Fake.refuse = ""
+        self.event("SessionStart", sid="s3", at_time=T0 + 2100)
+        self.assertEqual(len(Fake.logged), 3)
+
+    def test_a_long_turn_is_one_block_and_is_not_logged_early(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("SessionStart", sid="s2", at_time=T0 + 2700)  # a foreign flush while the turn runs
+        self.assertEqual((Fake.logged, "s1.status" in self.state_files()), ([], False))
+        self.event("Stop", at_time=T0 + 3000)
+        self.event("SessionEnd", at_time=T0 + 3010)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["3000s"])
+
+    def test_a_4xx_is_a_refusal_noticed_once_and_a_5xx_is_silent_and_retried(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("Stop", at_time=T0 + 60)
+        Fake.deny = 403
+        self.event("SessionEnd", at_time=T0 + 70)
+        self.assertIn("HTTP 403", self.notices())
+        Fake.deny = 502
+        with contextlib.redirect_stdout(io.StringIO()) as shown:
+            self.event("SessionStart", sid="s2", at_time=T0 + 2000)  # prints the 403's notice
+        self.assertEqual(shown.getvalue().count("HTTP"), 1)
+        self.assertNotIn("notices", self.state_files())  # the 5xx added no notice
+        Fake.deny = 0
+        self.event("SessionStart", sid="s3", at_time=T0 + 2100)
+        self.assertEqual(len(Fake.logged), 1)
+
+    def test_a_session_ending_mid_turn_logs_the_turn_up_to_its_end(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("SessionEnd", at_time=T0 + 500)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["500s"])
+
+    def test_a_turn_cut_short_by_the_next_prompt_ran_until_it(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("UserPromptSubmit", at_time=T0 + 200)
+        self.event("Stop", at_time=T0 + 260)
+        self.event("SessionEnd", at_time=T0 + 270)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["260s"])
+
+    def test_a_turn_cut_short_counts_at_most_30_minutes(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("UserPromptSubmit", at_time=T0 + 5 * 3600)
+        self.event("Stop", at_time=T0 + 5 * 3600 + 60)
+        self.event("SessionEnd", at_time=T0 + 5 * 3600 + 70)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["1800s", "60s"])
+
+    def test_a_completed_turn_is_logged_while_a_later_prompt_is_still_open(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("Stop", at_time=T0 + 600)
+        self.event("UserPromptSubmit", at_time=T0 + 1000)  # unanswered; no SessionEnd
+        self.event("SessionStart", sid="s2", at_time=T0 + 5000)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["600s"])
+
+    def test_a_block_logged_early_and_then_extended_logs_only_the_rest(self):
+        self.test_a_completed_turn_is_logged_while_a_later_prompt_is_still_open()
+        self.event("Stop", at_time=T0 + 5000)  # the open turn finishes: one block 0..5000
+        self.event("SessionEnd", at_time=T0 + 5010)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["600s", "4400s"])
+        self.assertEqual(Fake.logged[1][1]["spentAt"], "2023-11-14T22:23:20Z")  # T0 + 600
+
+    def test_timesheet_label_is_required_with_the_code(self):
+        self.run_session(self.worktree_slice("**code:** 99999.9"))  # the only such issue lacks `timesheet`
+        self.assertEqual(Fake.logged, [])
+
+
+if __name__ == "__main__":
+    unittest.main(argv=[sys.argv[0]])
