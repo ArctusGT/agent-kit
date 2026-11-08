@@ -2,15 +2,18 @@
 """Log a Claude Code session's active time to the repo's timesheet ticket, as the repo's bot.
 
   agent_time.py hook             read a Claude Code hook's JSON on stdin (hooks/agent-time.sh runs this)
-  agent_time.py dry-run [FILE]   print which blocks would be logged where; FILE is a session record,
-                                 default every record in the state directory. Reads the forge, writes nothing.
+  agent_time.py dry-run          print which blocks would be logged where, for every session of the project the
+                                 current directory's setting names. Reads the forge, writes nothing.
 
 A hook notes the moment of each prompt sent (UserPromptSubmit) and reply finished (Stop). Moments more than
-30 minutes apart fall in separate blocks. At SessionStart the blocks of earlier sessions that are over are
-logged; at SessionEnd all of this session's blocks are, by a detached child so the session never waits.
-A block is logged by `timelogCreate` on the repo's open `timesheet` issue labelled `code:<code>`. The code is the
-`**code:**` line of the slice the session works in (cwd under .claude/worktrees/<effort>/<NNN-slug>), else the
-repo's default. A code with no such issue keeps its blocks unlogged and leaves a notice for the next SessionStart.
+30 minutes apart fall in separate blocks. At SessionStart the blocks that are over, of every session that
+worked for the same forge project (whichever checkout or worktree it ran in), are logged; at SessionEnd all of
+this session's blocks are too, by a detached child so the session never waits.
+A block is logged by `timelogCreate` on the project's open `timesheet` issue labelled `code:<code>`. A session has
+one code, fixed when its first moment falls in a slice's worktree (cwd under .claude/worktrees/<effort>/<NNN-slug>):
+that slice's `**code:**` line, else the repo's default; a session never in one has the default.
+A block that cannot be logged for want of a ticket, or because the forge refused it, stays unlogged and leaves a
+notice (project, code, reason; once per block and reason) that the next SessionStart in any configured repo prints.
 
 Per-repo setting, committed at the repo root as .agent-time.json:
   {"forge": "https://<host>", "project": "<group>/<project>", "code": "<default code>"}
@@ -19,7 +22,8 @@ Token, one file per forge project, read and never printed or logged:
 A repo with no setting or no token logs nothing and says nothing. Every hook exit is 0.
 
 Environment: AGENT_TIME_CONFIG_DIR (default ~/.config/agent-time), AGENT_TIME_STATE_DIR
-(default ~/.local/state/agent-time; holds one JSON record per session and the notices file).
+(default ~/.local/state/agent-time). Per session <id>: <id>.json (project, code; written by hooks), <id>.moments
+(one epoch second per line; hooks append), <id>.status (logged or void blocks; the flush writes); plus `notices`.
 `hook` and a real flush change the state directory and, through the forge, the ticket; `dry-run` changes neither.
 """
 import argparse
@@ -29,12 +33,32 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
+
+import fcntl
+from typing import NamedTuple
 
 GAP = 30 * 60
 SETTING = ".agent-time.json"
 WORKTREE = re.compile(r"/\.claude/worktrees/([^/]+)/([^/]+)")
+
+
+class Ticket(NamedTuple):
+    id: int   # the issue's global id, which timelogCreate takes
+    iid: int  # its number in the project
+
+
+class Item(NamedTuple):
+    """One block and what to do with it: `log`, `void` (nothing to log), `no-ticket`, or `refused` (error)."""
+    session: str
+    start: int
+    end: int
+    code: str
+    ticket: "Ticket | None"
+    action: str
+    error: str = ""
 
 
 def config_dir():
@@ -46,7 +70,7 @@ def state_dir():
 
 
 def blocks(moments, gap=GAP):
-    """[(start, end)] of sorted moments; a gap of more than `gap` seconds starts a new block."""
+    """[(start, end)] of moments; a gap of more than `gap` seconds starts a new block."""
     out = []
     for m in sorted(moments):
         if out and m - out[-1][1] <= gap:
@@ -57,14 +81,14 @@ def blocks(moments, gap=GAP):
 
 
 def find_setting(cwd):
-    """(root, setting) of the nearest .agent-time.json at or above cwd, or None."""
+    """The nearest valid .agent-time.json at or above cwd, or None."""
     d = os.path.abspath(cwd)
     while True:
         try:
             with open(os.path.join(d, SETTING)) as f:
                 s = json.load(f)
             if all(isinstance(s.get(k), str) and s[k] for k in ("forge", "project", "code")):
-                return d, s
+                return s
         except (OSError, ValueError, AttributeError):
             pass
         parent = os.path.dirname(d)
@@ -81,136 +105,173 @@ def token_for(project):
         return None
 
 
-def slice_code(cwd, default):
-    """The `**code:**` of the slice a session in a slice's worktree works in, else `default`."""
+def slice_worktree(cwd):
+    """The slice file of the worktree cwd is in, or None."""
     m = WORKTREE.search(cwd)
-    if m:
-        root = cwd[: m.end(2)]
-        try:
-            with open(os.path.join(root, ".efforts", m.group(1), m.group(2) + ".md")) as f:
-                for line in f:
-                    c = re.match(r"\*\*code:\*\*\s*(\S+)", line)
-                    if c:
-                        return c.group(1)
-        except OSError:
-            pass
+    return m and os.path.join(cwd[: m.end(2)], ".efforts", m.group(1), m.group(2) + ".md")
+
+
+def slice_code(path, default):
+    """The `**code:**` line of the slice at `path`, else `default`."""
+    try:
+        with open(path) as f:
+            for line in f:
+                c = re.match(r"\*\*code:\*\*\s*(\S+)", line)
+                if c:
+                    return c.group(1)
+    except OSError:
+        pass
     return default
 
 
 class Forge:
-    def __init__(self, base, project, token):
-        self.base, self.project, self.token = base.rstrip("/"), project, token
+    def __init__(self, base, token):
+        self.base, self.token = base.rstrip("/"), token
 
     def _call(self, path, body=None):
         req = urllib.request.Request(self.base + path, headers={"PRIVATE-TOKEN": self.token})
         if body is not None:
             req.data = json.dumps(body).encode()
             req.add_header("Content-Type", "application/json")
-        with urllib.request.urlopen(req, timeout=10) as r:
-            return json.load(r)
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            e.close()
+            raise
 
-    def ticket(self, code):
-        """(issue id, iid) of the lowest-numbered open timesheet issue labelled code:<code>, else None."""
+    def ticket(self, project, code):
+        """The lowest-numbered open issue labelled `timesheet` and `code:<code>` (both: the filter is AND), or None."""
         q = urllib.parse.urlencode({"labels": "timesheet,code:" + code, "state": "opened", "per_page": 100})
-        issues = self._call("/api/v4/projects/%s/issues?%s" % (urllib.parse.quote(self.project, safe=""), q))
-        if not issues:
-            return None
-        first = min(issues, key=lambda i: i["iid"])
-        return first["id"], first["iid"]
+        issues = self._call("/api/v4/projects/%s/issues?%s" % (urllib.parse.quote(project, safe=""), q))
+        first = min(issues, key=lambda i: i["iid"], default=None)
+        return first and Ticket(first["id"], first["iid"])
 
-    def log(self, issue_id, start, seconds, summary):
+    def log(self, ticket, start, seconds, summary):
+        """None if logged, else the forge's reason for refusing."""
         query = ("mutation($input: TimelogCreateInput!){ timelogCreate(input:$input){ "
                  "timelog{ id } errors } }")
         spent = datetime.datetime.fromtimestamp(start, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        inp = {"issuableId": "gid://gitlab/Issue/%d" % issue_id, "spentAt": spent,
+        inp = {"issuableId": "gid://gitlab/Issue/%d" % ticket.id, "spentAt": spent,
                "timeSpent": "%ds" % seconds, "summary": summary}
-        data = self._call("/api/graphql", {"query": query, "variables": {"input": inp}}).get("data") or {}
-        return bool(((data.get("timelogCreate") or {}).get("timelog")))
+        ans = self._call("/api/graphql", {"query": query, "variables": {"input": inp}})
+        made = (ans.get("data") or {}).get("timelogCreate") or {}
+        if made.get("timelog"):
+            return None
+        errors = made.get("errors") or [e.get("message", "error") for e in ans.get("errors") or []]
+        return "; ".join(errors) or "no timelog in the answer"
 
 
 def summary_for(session_id):
     return "agent time: Claude Code session %s" % session_id
 
 
-def load(path):
-    with open(path) as f:
-        return json.load(f)
+def read_json(path, default):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
 
 
-def save(path, rec):
-    tmp = path + ".tmp"
+def write_json(path, value):
+    tmp = "%s.tmp.%d" % (path, os.getpid())
     with open(tmp, "w") as f:
-        json.dump(rec, f)
+        json.dump(value, f)
     os.replace(tmp, path)
 
 
-def due(rec, now, final):
-    """Blocks of a record not yet logged that are over: all of them when `final`, else those a gap has closed."""
-    out = []
-    for start, end in blocks(rec["moments"]):
-        if start in rec["logged"]:
-            continue
-        if final or end != max(rec["moments"]) or now - end > GAP:
-            out.append((start, end))
+def read_moments(path):
+    try:
+        with open(path) as f:
+            return [int(x) for x in f.read().split()]
+    except (OSError, ValueError):
+        return []
+
+
+def sessions(project):
+    """[(id, meta, moments, status)] of the sessions that worked for `project`."""
+    sdir, out = state_dir(), []
+    try:
+        names = sorted(n for n in os.listdir(sdir) if n.endswith(".json"))
+    except OSError:
+        return out
+    for n in names:
+        sid = n[:-5]
+        meta = read_json(os.path.join(sdir, n), {})
+        if meta.get("project") == project:
+            out.append((sid, meta, read_moments(os.path.join(sdir, sid + ".moments")),
+                        read_json(os.path.join(sdir, sid + ".status"), {})))
     return out
 
 
-def flush(root, setting, own_id, final, now, write=True, say=print):
-    """Log every due block of this repo's records. Returns the (session, start, end, code, target) list handled."""
-    token = token_for(setting["project"])
-    if not token:
-        return []
-    forge = Forge(setting["forge"], setting["project"], token)
-    tickets, missing, handled = {}, set(), []
-    sdir = state_dir()
-    try:
-        names = sorted(os.listdir(sdir))
-    except OSError:
-        return []
-    for name in names:
-        if not name.endswith(".json"):
-            continue
-        path = os.path.join(sdir, name)
-        try:
-            rec = load(path)
-        except (OSError, ValueError):
-            continue
-        if rec.get("root") != root:
-            continue
-        mine = rec["session"] == own_id
-        for start, end in due(rec, now, final and mine):
+def plan(project, forge, now, ending=None, everything=False):
+    """Every block of `project` not yet logged or void, that is over, with what to do with it.
+
+    A block is over when the session `ending` has ended (all its blocks), `everything` is set, or a gap has
+    closed it. Reads the forge for tickets, writes nothing.
+    """
+    tickets, items = {}, []
+    for sid, meta, moments, status in sessions(project):
+        for start, end in blocks(moments):
+            if str(start) in status:
+                continue
+            if not (everything or sid == ending or end != max(moments) or now - end > GAP):
+                continue
+            code = meta["code"]
             if end - start < 1:
-                rec["logged"].append(start)  # nothing to log: a lone moment
+                items.append(Item(sid, start, end, code, None, "void"))
                 continue
-            code = slice_code(rec["cwd"], setting["code"])
-            try:
-                if code not in tickets:
-                    tickets[code] = forge.ticket(code)
-                target = tickets[code]
-            except Exception:
-                continue  # forge unreachable: keep the block for next time
-            if target is None:
-                missing.add(code)
-                continue
-            handled.append((rec["session"], start, end, code, "#%d" % target[1]))
-            if not write:
-                continue
-            try:
-                if forge.log(target[0], start, end - start, summary_for(rec["session"])):
-                    rec["logged"].append(start)
-            except Exception:
-                pass
-        if write:
-            if all(s in rec["logged"] for s, _ in blocks(rec["moments"])) and final and mine:
-                os.remove(path)
-            else:
-                save(path, rec)
-    if write and missing:
+            if code not in tickets:
+                try:
+                    tickets[code] = (forge.ticket(project, code), "")
+                except urllib.error.HTTPError as e:
+                    tickets[code] = (None, "forge answered HTTP %d" % e.code)
+                except Exception:
+                    continue  # unreachable: keep the block for next time, say nothing
+            ticket, error = tickets[code]
+            action = "refused" if error else "log" if ticket else "no-ticket"
+            items.append(Item(sid, start, end, code, ticket, action, error))
+    return items
+
+
+def flush(project, forge, now, ending=None):
+    """Do what plan() says; the flush alone writes <id>.status and `notices`. One flush at a time."""
+    sdir = state_dir()
+    with open(os.path.join(sdir, "lock"), "w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            return
+        for item in plan(project, forge, now, ending):
+            record(sdir, project, forge, item)
+
+
+def record(sdir, project, forge, item):
+    """Carry out one planned item: log it or mark it void, and write a notice once for a reason it cannot be."""
+    path = os.path.join(sdir, item.session + ".status")
+    status = read_json(path, {})
+    reason = item.error
+    if item.action == "void":
+        status[str(item.start)] = "void"
+    elif item.action == "no-ticket":
+        reason = "no open timesheet ticket labelled code:%s" % item.code
+    elif item.action == "log":
+        try:
+            reason = forge.log(item.ticket, item.start, item.end - item.start, summary_for(item.session)) or ""
+        except urllib.error.HTTPError as e:
+            reason = "forge answered HTTP %d" % e.code
+        except Exception:
+            return  # unreachable: the block stays for next time, silently
+        if not reason:
+            status[str(item.start)] = "logged"
+    noticed = status.setdefault("noticed", [])
+    key = "%d:%s" % (item.start, reason)
+    if reason and key not in noticed:
+        noticed.append(key)
         with open(os.path.join(sdir, "notices"), "a") as f:
-            for c in sorted(missing):
-                f.write("agent time: no open timesheet ticket labelled code:%s in %s; blocks kept unlogged\n"
-                        % (c, setting["project"]))
-    return handled
+            f.write("agent time: %s code:%s: %s; the block stays unlogged\n" % (project, item.code, reason))
+    write_json(path, status)
 
 
 def detached(fn):
@@ -227,69 +288,66 @@ def detached(fn):
         os._exit(0)
 
 
+def note_moment(sdir, sid, setting, cwd, now):
+    """Append a moment to the session's file; make its record, or fix its code, as the first slice worktree comes."""
+    meta_path = os.path.join(sdir, sid + ".json")
+    meta = read_json(meta_path, None)
+    if meta is None:
+        meta = {"project": setting["project"], "code": setting["code"], "fixed": False}
+    slice_file = slice_worktree(cwd)
+    if slice_file and not meta["fixed"]:
+        meta["code"], meta["fixed"] = slice_code(slice_file, meta["code"]), True
+    write_json(meta_path, meta)
+    with open(os.path.join(sdir, sid + ".moments"), "a") as f:
+        f.write("%d\n" % now)
+
+
 def hook(event, now=None, flush_in_child=True):
     now = int(now if now is not None else time.time())
-    found = find_setting(event.get("cwd") or os.getcwd())
-    sid, name = event.get("session_id"), event.get("hook_event_name")
-    if not found or not sid or not re.fullmatch(r"[\w.-]+", sid):
+    cwd, sid, name = event.get("cwd") or os.getcwd(), event.get("session_id"), event.get("hook_event_name")
+    setting = find_setting(cwd)
+    if not setting or not sid or not re.fullmatch(r"[\w.-]+", sid):
         return
-    root, setting = found
     sdir = state_dir()
     os.makedirs(sdir, exist_ok=True)
-    path = os.path.join(sdir, sid + ".json")
-    try:
-        rec = load(path)
-    except (OSError, ValueError):
-        rec = {"session": sid, "root": root, "cwd": event["cwd"], "moments": [], "logged": []}
-    rec["cwd"] = event.get("cwd") or rec["cwd"]
     if name in ("UserPromptSubmit", "Stop"):
-        rec["moments"].append(now)
-    save(path, rec)
+        note_moment(sdir, sid, setting, cwd, now)
+    if name == "SessionStart":
+        notices = os.path.join(sdir, "notices.%d" % os.getpid())
+        try:
+            os.rename(os.path.join(sdir, "notices"), notices)
+            with open(notices) as f:
+                sys.stdout.write(f.read())
+            os.remove(notices)
+        except OSError:
+            pass
     if name in ("SessionStart", "SessionEnd"):
-        final = name == "SessionEnd"
-        if name == "SessionStart":
-            notices = os.path.join(sdir, "notices")
-            try:
-                with open(notices) as f:
-                    sys.stdout.write(f.read())
-                os.remove(notices)
-            except OSError:
-                pass
-        job = lambda: flush(root, setting, sid, final, now)
-        detached(job) if flush_in_child else job()
+        token = token_for(setting["project"])
+        if token:
+            job = lambda: flush(setting["project"], Forge(setting["forge"], token), now,
+                                sid if name == "SessionEnd" else None)
+            detached(job) if flush_in_child else job()
 
 
-def dry_run(files, now):
-    for path in files:
-        rec = load(path)
-        found = find_setting(rec["cwd"])
-        if not found:
-            print("%s: no setting at or above %s, would log nothing" % (rec["session"], rec["cwd"]))
-            continue
-        root, setting = found
-        if not token_for(setting["project"]):
-            print("%s: no token for %s, would log nothing" % (rec["session"], setting["project"]))
-            continue
-        forge = Forge(setting["forge"], setting["project"], token_for(setting["project"]))
-        for start, end in due(rec, now, True):
-            code = slice_code(rec["cwd"], setting["code"])
-            try:
-                target = forge.ticket(code)
-            except Exception as e:
-                print("%s: forge unreachable (%s), block kept" % (rec["session"], type(e).__name__))
-                continue
-            when = datetime.datetime.fromtimestamp(start, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            where = "%s#%d" % (setting["project"], target[1]) if target else "no ticket, kept unlogged"
-            print("%s: would log %s %ds code:%s -> %s | %s" % (rec["session"], when, end - start, code, where,
-                                                            summary_for(rec["session"])))
+def dry_run(setting, now):
+    token = token_for(setting["project"])
+    if not token:
+        print("no token for %s, would log nothing" % setting["project"])
+        return
+    for i in plan(setting["project"], Forge(setting["forge"], token), now, everything=True):
+        when = datetime.datetime.fromtimestamp(i.start, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        where = {"log": "%s#%d" % (setting["project"], i.ticket.iid if i.ticket else 0),
+                 "void": "nothing to log", "no-ticket": "no ticket, kept unlogged",
+                 "refused": i.error + ", kept unlogged"}[i.action]
+        print("%s: %s %ds code:%s -> %s | %s" % (i.session, when, i.end - i.start, i.code, where,
+                                                  summary_for(i.session)))
 
 
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("hook")
-    d = sub.add_parser("dry-run")
-    d.add_argument("file", nargs="?")
+    sub.add_parser("dry-run")
     a = ap.parse_args(argv)
     if a.cmd == "hook":
         try:
@@ -297,11 +355,11 @@ def main(argv):
         except Exception:
             pass
         return 0
-    if a.file:
-        files = [a.file]
-    else:
-        files = [os.path.join(state_dir(), n) for n in sorted(os.listdir(state_dir())) if n.endswith(".json")]
-    dry_run(files, int(time.time()))
+    setting = find_setting(os.getcwd())
+    if not setting:
+        print("no %s at or above the current directory" % SETTING)
+        return 1
+    dry_run(setting, int(time.time()))
     return 0
 
 
