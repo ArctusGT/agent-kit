@@ -186,6 +186,14 @@ class Case(unittest.TestCase):
         self.run_session(self.repo)
         self.assertEqual((Fake.logged, self.state_files()), ([], []))
 
+    def test_a_nearer_invalid_setting_does_not_fall_through_to_a_parent(self):
+        sub = self.repo + "/sub"
+        os.makedirs(sub)
+        with open(sub + "/.agent-time.json", "w") as f:
+            f.write('{"forge": "%s"}' % self.url)  # no project or code
+        self.run_session(sub)
+        self.assertEqual((Fake.logged, self.state_files()), ([], []))
+
     def test_no_token_logs_nothing(self):
         os.remove(self.tmp.name + "/config/g-p.token")
         self.run_session(self.repo)
