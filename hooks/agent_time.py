@@ -103,6 +103,7 @@ def find_setting(cwd):
 
 
 def token_for(project):
+    """The forge project's bot token, or None if its file is missing or empty."""
     try:
         with open(os.path.join(config_dir(), project.replace("/", "-") + ".token")) as f:
             return f.read().strip() or None
@@ -132,6 +133,8 @@ def slice_code(path, default):
 
 
 class Forge:
+    """The two forge calls the hook makes, as the bot whose `token` it holds. HTTP errors propagate."""
+
     def __init__(self, base, token):
         self.base, self.token = base.rstrip("/"), token
 
@@ -350,6 +353,7 @@ def note_moment(sid, setting, cwd, now):
     """Append a moment to the session's file; make its record, or fix its code, as the first slice worktree comes."""
     meta_path = session_file(sid, ".json")
     meta = read_json(meta_path, None)
+    # "fixed": the code is settled once the session has been in a slice's worktree, so a later move cannot change it.
     if meta is None:
         meta = {"project": setting["project"], "code": setting["code"], "fixed": False}
     slice_file = slice_worktree(cwd)
@@ -362,6 +366,10 @@ def note_moment(sid, setting, cwd, now):
 
 
 def hook(event, now=None, flush_in_child=True):
+    """Handle one Claude Code hook `event`: note a moment, print notices, or flush, by its hook_event_name.
+
+    `flush_in_child` False flushes in this process, which the tests use to see the result.
+    """
     now = int(now if now is not None else time.time())
     cwd, sid, name = event.get("cwd") or os.getcwd(), event.get("session_id"), event.get("hook_event_name")
     setting = find_setting(cwd)
