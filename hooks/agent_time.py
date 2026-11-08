@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """Log a Claude Code session's active time to the repo's timesheet ticket, as the repo's bot.
 
-  agent_time.py hook             read a Claude Code hook's JSON on stdin (hooks/agent-time.sh runs this)
+  agent_time.py hook             read a Claude Code hook's JSON on stdin (hooks/agent-time.sh runs this);
+                                 uses its session_id, cwd and hook_event_name
   agent_time.py dry-run          print which blocks would be logged where, for every session of the project the
                                  current directory's setting names. Reads the forge, writes nothing.
 
-A hook notes the moment of each prompt sent (UserPromptSubmit) and reply finished (Stop). Moments more than
-30 minutes apart fall in separate blocks. At SessionStart the blocks that are over, of every session that
+A hook notes the moment of each prompt sent (UserPromptSubmit) and reply finished (Stop). A turn, from
+a prompt to the reply that ends it, is active throughout, however long. Turns and moments more than 30 minutes
+apart fall in separate blocks, and a block whose turn is still running is never logged until its session ends. At SessionStart the blocks that are over, of every session that
 worked for the same forge project (whichever checkout or worktree it ran in), are logged; at SessionEnd all of
 this session's blocks are too, by a detached child so the session never waits.
 A block is logged by `timelogCreate` on the project's open `timesheet` issue labelled `code:<code>`. A session has
 one code, fixed when its first moment falls in a slice's worktree (cwd under .claude/worktrees/<effort>/<NNN-slug>):
 that slice's `**code:**` line, else the repo's default; a session never in one has the default.
-A block that cannot be logged for want of a ticket, or because the forge refused it, stays unlogged and leaves a
-notice (project, code, reason; once per block and reason) that the next SessionStart in any configured repo prints.
+A block that cannot be logged for want of a ticket, or because the forge refused it (a 4xx or an `errors` answer),
+stays unlogged and leaves a notice (project, code, reason; once per block and reason) that the next SessionStart in
+any configured repo prints. A forge that cannot be reached, or answers 5xx, leaves the block to be tried again, silently.
 
 Per-repo setting, committed at the repo root as .agent-time.json:
   {"forge": "https://<host>", "project": "<group>/<project>", "code": "<default code>"}
@@ -23,7 +26,8 @@ A repo with no setting or no token logs nothing and says nothing. Every hook exi
 
 Environment: AGENT_TIME_CONFIG_DIR (default ~/.config/agent-time), AGENT_TIME_STATE_DIR
 (default ~/.local/state/agent-time). Per session <id>: <id>.json (project, code; written by hooks), <id>.moments
-(one epoch second per line; hooks append), <id>.status (logged or void blocks; the flush writes); plus `notices`.
+(a kind, P or S, and an epoch second per line; hooks append), <id>.status (each block logged or void, and the
+notices already written for it; the flush writes); plus `notices`.
 `hook` and a real flush change the state directory and, through the forge, the ticket; `dry-run` changes neither.
 """
 import argparse
@@ -69,15 +73,39 @@ def state_dir():
     return os.environ.get("AGENT_TIME_STATE_DIR") or os.path.expanduser("~/.local/state/agent-time")
 
 
-def blocks(moments, gap=GAP):
-    """[(start, end)] of moments; a gap of more than `gap` seconds starts a new block."""
-    out = []
-    for m in sorted(moments):
-        if out and m - out[-1][1] <= gap:
-            out[-1][1] = m
+def blocks(moments, finished, gap=GAP):
+    """[(start, end, running)] of a session's moments, each ("P", t) a prompt sent or ("S", t) a reply finished.
+
+    A turn, a prompt to the reply that ends it, is active throughout, however long. Turns and lone moments more
+    than `gap` seconds apart fall in separate blocks. A prompt still unanswered makes its block `running`, unless the
+    session is `finished`, when it counts as a lone moment.
+    """
+    spans, waiting = [], None
+    for kind, t in moments:
+        if kind == "P":
+            if waiting is not None:
+                spans.append((waiting, waiting))  # interrupted by the next prompt
+            waiting = t
+        elif waiting is not None:
+            spans.append((waiting, t))
+            waiting = None
         else:
-            out.append([m, m])
-    return [tuple(b) for b in out]
+            spans.append((t, t))
+    running = waiting is not None and not finished
+    if waiting is not None and finished:
+        spans.append((waiting, waiting))
+    out = []
+    for start, end in spans:
+        if out and start - out[-1][1] <= gap:
+            out[-1][1] = max(out[-1][1], end)
+        else:
+            out.append([start, end])
+    if running:
+        if out and waiting - out[-1][1] <= gap:
+            out[-1][1] = waiting
+        else:
+            out.append([waiting, waiting])
+    return [(a, b, running and i == len(out) - 1) for i, (a, b) in enumerate(out)]
 
 
 def read_setting(path):
@@ -199,9 +227,10 @@ def write_json(path, value):
 
 
 def read_moments(path):
+    """[(kind, epoch second)] in the order the hooks wrote them."""
     try:
         with open(path) as f:
-            return [int(x) for x in f.read().split()]
+            return [(k, int(t)) for k, t in (line.split() for line in f)]
     except (OSError, ValueError):
         return []
 
@@ -228,21 +257,30 @@ def sessions(project):
 
 
 class Refused(Exception):
-    """The forge answered a request with an HTTP error: not a network failure, so worth a notice."""
+    """The forge answered a request with a 4xx: not a failure to reach it, so worth a notice."""
 
 
-def is_over(end, last_moment, now, ending):
-    """Whether a block ending at `end` can be logged: its session is `ending`, a later block exists, or a gap closed it."""
-    has_later_block = end != last_moment
-    return ending or has_later_block or now - end > GAP
+def is_over(block, last_block, now, finished):
+    """Whether a block can no longer grow, so it may be logged or voided.
+
+    It cannot while its turn is running. Otherwise it is over once its session has finished, a later block exists,
+    or a gap has passed since its end, after which a new prompt starts a new block.
+    """
+    start, end, running = block
+    if running:
+        return False
+    has_later_block = block != last_block
+    return finished or has_later_block or now - end > GAP
 
 
 def lookup(forge, project, code, found):
-    """The ticket for `code` (None if it has none), asked once per code into `found`. Raises Refused on an HTTP error."""
+    """The ticket for `code` (None if it has none), asked once per code into `found`. Raises Refused on a 4xx."""
     if code not in found:
         try:
             found[code] = forge.ticket(project, code)
         except urllib.error.HTTPError as e:
+            if e.code >= 500:
+                raise  # the forge failing is not the forge refusing
             found[code] = Refused("forge answered HTTP %d" % e.code)
     if isinstance(found[code], Refused):
         raise found[code]
@@ -256,9 +294,11 @@ def plan(project, forge, now, ending=None, everything=False):
     """
     found, items = {}, []
     for sid, meta, moments, status in sessions(project):
-        ends_now = everything or sid == ending
-        for start, end in blocks(moments):
-            if str(start) in status or not is_over(end, max(moments), now, ends_now):
+        finished = everything or sid == ending
+        session_blocks = blocks(moments, finished)
+        for block in session_blocks:
+            start, end, _ = block
+            if str(start) in status or not is_over(block, session_blocks[-1], now, finished):
                 continue
             code = meta["code"]
             if end - start < 1:
@@ -288,10 +328,12 @@ def flush(project, forge, now, ending=None):
 
 
 def attempt(item, forge):
-    """Log the item's block: None if the forge took it, else the reason it did not. Unreachable raises."""
+    """Log the item's block: None if the forge took it, else the reason it refused. Unreachable (a 5xx too) raises."""
     try:
         return forge.log(item.ticket, item.start, item.end - item.start, summary_for(item.session))
     except urllib.error.HTTPError as e:
+        if e.code >= 500:
+            raise
         return "forge answered HTTP %d" % e.code
 
 
@@ -349,8 +391,8 @@ def detached(fn):
         os._exit(0)
 
 
-def note_moment(sid, setting, cwd, now):
-    """Append a moment to the session's file; make its record, or fix its code, as the first slice worktree comes."""
+def note_moment(sid, kind, setting, cwd, now):
+    """Append a moment, kind "P" (prompt) or "S" (stop), to the session's file; make its record, or fix its code, as the first slice worktree comes."""
     meta_path = session_file(sid, ".json")
     meta = read_json(meta_path, None)
     # "fixed": the code is settled once the session has been in a slice's worktree, so a later move cannot change it.
@@ -362,7 +404,7 @@ def note_moment(sid, setting, cwd, now):
         meta["fixed"] = True
     write_json(meta_path, meta)
     with open(session_file(sid, ".moments"), "a") as f:
-        f.write("%d\n" % now)
+        f.write("%s %d\n" % (kind, now))
 
 
 def hook(event, now=None, flush_in_child=True):
@@ -378,7 +420,7 @@ def hook(event, now=None, flush_in_child=True):
     sdir = state_dir()
     os.makedirs(sdir, exist_ok=True)
     if name in ("UserPromptSubmit", "Stop"):
-        note_moment(sid, setting, cwd, now)
+        note_moment(sid, "P" if name == "UserPromptSubmit" else "S", setting, cwd, now)
     if name == "SessionStart":
         print_notices(sdir)
     if name in ("SessionStart", "SessionEnd"):

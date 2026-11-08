@@ -31,6 +31,7 @@ class Fake(http.server.BaseHTTPRequestHandler):
     tickets = []   # (id, iid, labels) of the open issues
     logged = []    # graphql inputs received
     down = False   # answer 500 to everything
+    deny = 0       # answer this status to everything, if set
     refuse = ""    # an error for timelogCreate to answer with
 
     def log_message(self, *a):
@@ -42,14 +43,18 @@ class Fake(http.server.BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(body).encode())
 
     def do_GET(self):
+        if Fake.deny:
+            return self.reply(Fake.deny, {})
         if Fake.down:
             return self.reply(500, {})
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-        wanted = set(q["labels"][0].split(","))  # GitLab's filter is AND, measured on 19.4.5
+        wanted = set(q["labels"][0].split(","))  # GitLab's filter is AND: on 19.4.5, GET /projects/:path/issues?labels=timesheet,code:X returned only the issue with both
         self.reply(200, [{"id": i, "iid": n} for i, n, labels in Fake.tickets if wanted <= set(labels)])
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if Fake.deny:
+            return self.reply(Fake.deny, {})
         if Fake.down:
             return self.reply(500, {})
         Fake.logged.append((self.headers["PRIVATE-TOKEN"], body["variables"]["input"]))
@@ -68,6 +73,7 @@ class Case(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.server.shutdown()
+        cls.server.server_close()
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -79,7 +85,7 @@ class Case(unittest.TestCase):
         os.makedirs(self.repo)
         Fake.tickets = [(900, 3, ["timesheet", "code:25050.9283"]), (901, 4, ["timesheet", "code:11111.1"]),
                         (902, 5, ["code:99999.9"])]  # not a timesheet issue
-        Fake.logged, Fake.down, Fake.refuse = [], False, ""
+        Fake.logged, Fake.down, Fake.deny, Fake.refuse = [], False, 0, ""
         self.setting(code="25050.9283")
         self.token("g-p", "secret-token")
 
@@ -108,10 +114,11 @@ class Case(unittest.TestCase):
         return os.listdir(d) if os.path.isdir(d) else []
 
     def test_gap_over_30_minutes_splits(self):
-        self.assertEqual(at.blocks([0, 1800, 1800 + 1801]), [(0, 1800), (3601, 3601)])
+        self.assertEqual(at.blocks([("S", 0), ("S", 1800), ("S", 3601)], True),
+                         [(0, 1800, False), (3601, 3601, False)])
 
     def test_gap_of_exactly_30_minutes_does_not_split(self):
-        self.assertEqual(at.blocks([0, 600, 600 + 1800]), [(0, 2400)])
+        self.assertEqual(at.blocks([("S", 0), ("S", 600), ("S", 2400)], True), [(0, 2400, False)])
 
     def test_session_end_logs_blocks_with_note_and_token(self):
         for t in (0, 100, 5000, 5300):
@@ -178,7 +185,8 @@ class Case(unittest.TestCase):
     def test_code_with_no_ticket_keeps_the_block_and_leaves_a_notice(self):
         self.run_session(self.worktree_slice("**code:** 99999.9"))
         self.assertEqual(Fake.logged, [])
-        self.assertNotIn("logged", open(self.tmp.name + "/state/s1.status").read())
+        with open(self.tmp.name + "/state/s1.status") as f:
+            self.assertNotIn("logged", f.read())
         self.assertIn("g/p code:99999.9", self.notices())
 
     def test_no_setting_logs_nothing_and_keeps_nothing(self):
@@ -239,6 +247,29 @@ class Case(unittest.TestCase):
         Fake.refuse = ""
         self.event("SessionStart", sid="s3", at_time=T0 + 2100)
         self.assertEqual(len(Fake.logged), 3)
+
+    def test_a_long_turn_is_one_block_and_is_not_logged_early(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("SessionStart", sid="s2", at_time=T0 + 2700)  # a foreign flush while the turn runs
+        self.assertEqual((Fake.logged, "s1.status" in self.state_files()), ([], False))
+        self.event("Stop", at_time=T0 + 3000)
+        self.event("SessionEnd", at_time=T0 + 3010)
+        self.assertEqual([i["timeSpent"] for _, i in Fake.logged], ["3000s"])
+
+    def test_a_4xx_is_a_refusal_noticed_once_and_a_5xx_is_silent_and_retried(self):
+        self.event("UserPromptSubmit", at_time=T0)
+        self.event("Stop", at_time=T0 + 60)
+        Fake.deny = 403
+        self.event("SessionEnd", at_time=T0 + 70)
+        self.assertIn("HTTP 403", self.notices())
+        Fake.deny = 502
+        with contextlib.redirect_stdout(io.StringIO()) as shown:
+            self.event("SessionStart", sid="s2", at_time=T0 + 2000)  # prints the 403's notice
+        self.assertEqual(shown.getvalue().count("HTTP"), 1)
+        self.assertNotIn("notices", self.state_files())  # the 5xx added no notice
+        Fake.deny = 0
+        self.event("SessionStart", sid="s3", at_time=T0 + 2100)
+        self.assertEqual(len(Fake.logged), 1)
 
     def test_timesheet_label_is_required_with_the_code(self):
         self.run_session(self.worktree_slice("**code:** 99999.9"))  # the only such issue lacks `timesheet`
