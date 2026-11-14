@@ -139,7 +139,7 @@ You sometimes need me to run commands on a host for security reasons.
 
 - Prefer to setup commands I run to output to .gitignore'd/ephemeral log files outside the repo that you can sweep.
 - If its not quicker to just ask me to take a photo, or explain what I can see; prefer to setup screen capture of Web/Native Apps.
-- Ask for permission before using the internet or the chrome-plugin; I'll likely say yes but I must click the browser extension to give permission.
+- Ask before using the internet outside a skill. Before driving Chrome, say so first: the extension needs a click from me to grant the site.
 
 ## Agent skills
 
