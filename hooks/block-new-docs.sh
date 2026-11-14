@@ -3,8 +3,8 @@
 # README.md inside the project, and names the generator that makes one from
 # the kit's template. Editing a file that already exists is never blocked.
 #
-# A slice is any .efforts/<effort>/<name>.md except spec.md, which to-spec
-# writes from its own template. Paths outside the project are left alone.
+# A slice is any .efforts/<effort>/<name>.md. Paths outside the project are
+# left alone.
 #
 # Reads the hook's JSON from stdin and changes nothing. Exit 0 lets the write
 # go ahead; exit 2 blocks it and hands stderr back to the Agent.
@@ -28,7 +28,7 @@ project=${CLAUDE_PROJECT_DIR:-$PWD}
 case "$path" in "$project"/*) ;; *) exit 0 ;; esac
 relative=${path#"$project"/}
 
-if [[ $relative =~ ^\.efforts/[^/]+/[^/]+\.md$ && ${relative##*/} != spec.md ]]; then
+if [[ $relative =~ ^\.efforts/[^/]+/[^/]+\.md$ ]]; then
   echo "Blocked: new slices come from the template. Run .agents/bin/new-slice <effort> <slug>, then edit the file it prints." >&2
   exit 2
 fi

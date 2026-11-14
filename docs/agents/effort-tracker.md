@@ -11,7 +11,7 @@ answers, in one header line under `**Status:**`, as
 ## When a skill says "publish to the effort tracker"
 
 For a slice, run `.agents/bin/new-slice <effort> <slug>` and fill in the file it
-prints. For the spec, write `.efforts/<effort>/spec.md` directly.
+prints.
 
 ## When a skill says "fetch the relevant slice"
 
@@ -26,18 +26,13 @@ Read the file at the referenced path. The user will normally pass the path or th
 
 ### Use with skills
 
-Based on Matt Pocock's original skills, by which followed the following build chain:
-
-```txt
-grill-with-docs → to-spec → to-slices → implement
-```
+`to-slices` turns a plan or the conversation into slices, and `implement` works them. `intent` applies throughout: where a request comes with its reason, the method is weighed against that reason before a slice is drafted.
 
 `implement` owns how a slice is worked: who implements it, the review passes and rounds, setting the Status, and landing. This document covers making, raising and closing slices.
 
 ## Layout
 
 - One effort per directory: `.efforts/<effort>/`
-- The spec is `.efforts/<effort>/spec.md`
 - Slices are one file per slice at `.efforts/<effort>/<NNN>-<slug>.md`
   - where `NNN` is append-only, non repeating number from `001`
   - never multiple slices combined into one file
