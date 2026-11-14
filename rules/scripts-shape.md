@@ -63,6 +63,3 @@ asked gets read instead, and reading one is how a wrong invocation gets built
 and then trusted: a reader who reconstructs a call from the source believes it
 more than one they were handed. Where the header carries a usage line the script
 itself ignores, that reconstruction is being made from a claim nothing checks.
-
-`scripts/link-check.py` in `iot-infra` carried its own invocation in its
-docstring while opening `--help` as a filename.
