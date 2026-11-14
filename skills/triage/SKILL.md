@@ -22,7 +22,7 @@ Two **category** roles:
 - `enhancement`: new feature or improvement
 
 State roles:
-- locate `doc/agents/triage-labels.md` for repo state roles
+- locate `docs/agents/triage-labels.md` for repo state roles
 
 Every triaged slice should carry one or both category roles and exactly one state role. If state roles conflict, flag it and ask the maintainer before doing anything else.
 
@@ -31,8 +31,8 @@ Every triaged slice should carry one or both category roles and exactly one stat
 The maintainer invokes `/triage` and describes what they want in natural language. Interpret the request and act. Examples:
 
 - "Show me anything that needs my attention"
-- "Let's look at #042" (slice)
-- "Move #042 to ready-for-agent"
+- "Let's look at storage/042" (slice)
+- "Move storage/042 to ready-for-agent"
 - "What's ready for agents to pick up?"
 
 ## Show what needs attention
@@ -56,7 +56,7 @@ Show counts and a one-line summary per item. Let the maintainer pick.
 4. **Grill (if needed).** If the intent behind the request is not clear, call the Skill tool twice, for "grilling" and "domain-modeling", sharpening domain terms and updating `GLOSSARY.md`/ADRs inline as decisions land.
 
 5. **Apply the outcome:**
-   - `ready-for-agent`: update the slice to use the agent brief format ([AGENT-BRIEF.md](AGENT-BRIEF.md)).
+   - `ready-for-agent`: update the slice to the shape in `docs/agents/SLICE-TEMPLATE.md`.
    - `ready-for-human`: same structure as an agent brief, but note why it can't be delegated entirely (needs vault access, judgment calls, external access, design decisions, manual testing).
    - `needs-info`: comment in `#Comments` of the slice triage notes (template below).
    - `ready-for-closure`: submit the slice for closure. If work hasn't been completed/attempted; with a comment in `#Comments` of the slice depending on *why*:
@@ -66,7 +66,7 @@ Show counts and a one-line summary per item. Let the maintainer pick.
 
 ## Quick state override
 
-If the maintainer says "move #42 to ready-for-agent", trust them and apply the role directly. Confirm what you're about to do (role changes, comment, close), then act. Skip grilling. If moving to `ready-for-agent` without a grilling session, ask whether they want to write an agent brief.
+If the maintainer says "move storage/042 to ready-for-agent", trust them and apply the role directly. Confirm what you're about to do (role changes, comment, close), then act. Skip grilling. If moving to `ready-for-agent` without a grilling session, ask whether they want to write an agent brief.
 
 ## Needs-info template
 
