@@ -21,8 +21,8 @@ is reachable by the reflex.
 is a different question from *"where did this come from"*, and it returns a
 confident, incomplete answer to the second.
 
-Measured 2026-09-01, in the project this skill was written for, on
-`files/job-templates/camera-trap/classify.py`: the file-scoped log returns two
+For example, in the project this skill was written for, on
+`files/job-templates/camera-trap/classify.py`, the file-scoped log returns two
 commits, and the one that introduced the file says
 *"the camera-trap template is new and original code"*. True, and it omits the
 whole provenance. The four commits carrying it wrote into `docs/Cluster.md`,
