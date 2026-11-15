@@ -1,22 +1,25 @@
 # Skill mechanics
 
-The skill-specific branch of [`writing-for-agents`](SKILL.md): what changes when the document is a skill (frontmatter, the invocation choice, and router skills). Everything else about writing it is the universal reference in `SKILL.md`.
+The skill-specific branch of [`writing-for-agents`](SKILL.md): what changes when the document is a skill (frontmatter, how it is reached, and router skills). Everything else about writing it is the universal reference in `SKILL.md`.
 
-## Invocation
+## Three ways a skill is reached
 
-Two choices, trading the two loads:
+A skill's file is always on disk. `disable-model-invocation` decides only whether its description sits in the agent's context; it never stops an agent reading the file. That gives three modes, each trading the two loads differently:
 
-- A **model-invoked** skill keeps a `description`, so the agent can fire it autonomously, and other skills can reach it. You can still type its name: model-invocation always _includes_ user reach; a description only ever adds agent discovery, never removes the human's. The description is the skill's top-level context pointer, forced to stay loaded at all times: permanent context load in exchange for discoverability. A model-invoked skill whose content is all reference is also one home for shared reference: another skill can invoke it, so reference needed by several skills lives in one place. Mechanics: omit `disable-model-invocation`, and write a model-facing description carrying the trigger branches (the pointer-writing rules in `SKILL.md` apply in full).
-- A **user-invoked** skill strips the description from the agent's reach: only the human typing its name can invoke it, and no other skill can. Zero context load, but it spends cognitive load: you are the index that must remember it exists. Mechanics: set `disable-model-invocation: true`; the `description` becomes human-facing: a one-line summary, trigger lists stripped.
+- A **model-invoked** skill keeps its `description` loaded at all times, so the agent fires it on its own when a situation matches. The human can still type its name: a description only ever adds agent discovery, never removes the human's. Permanent context load, bought for discoverability. Mechanics: omit `disable-model-invocation`, and write a model-facing description carrying the trigger branches (the pointer-writing rules in `SKILL.md` apply in full).
+- A **user-invoked** skill starts only when the human types its name. Zero context load, but it spends cognitive load: the human is the index that must remember it exists. Mechanics: set `disable-model-invocation: true`; the `description` becomes human-facing: a one-line summary, trigger lists stripped.
+- A **by-path** skill is a user-invoked skill that other documents also reach, by naming its file. The pointer at each call site carries the trigger condition, so the pointer-writing rules in `SKILL.md` apply there; the skill's own description stays human-facing. Zero context load until a caller fires, and nothing for the human to remember.
 
-Pick model-invocation only when the agent must reach the skill on its own, or another skill must. If it only ever fires by hand, make it user-invoked and pay no context load.
+Pick model-invocation only when the agent must reach the skill from a situation no calling document puts in front of it. Pick by-path when every route to the skill runs through another document: a skill, a rule, `AGENTS.md`. Pick user-invocation when only the human ever starts it.
 
-Shared reference that two user-invoked skills both need can live in neither: with no descriptions, neither can fire the other. Push it to a plain file outside the skill system: external reference any skill can point at.
+## Calling another skill
+
+Name its file: "read `.agents/skills/<name>/SKILL.md` and follow it". Every project that carries the kit has that path, whether or not it links the skill into `.claude/skills/`, and a missing file is an error in the agent's turn, not a call that silently never happens. Say at the call site when to read it and what to take from it ("follow it", "use its vocabulary"): the callee's description is never consulted on this route. Frontmatter that only the `Skill` tool acts on, such as `argument-hint`, does nothing here, so put what the skill needs in the calling sentence.
 
 ## Splitting by invocation
 
-The invocation cut of splitting (the sequence cut lives in `SKILL.md`): split off a model-invoked skill when you have a distinct leading word that should trigger it on its own (a trigger word you actually use in your prompts), or another skill must reach it. You pay context load for the new always-loaded description, so that independent reach has to be worth it.
+The invocation cut of splitting (the sequence cut lives in `SKILL.md`): split off a model-invoked skill when you have a distinct leading word that should trigger it on its own (a trigger word you actually use in your prompts). You pay context load for the new always-loaded description, so that independent reach has to be worth it. Split off a by-path skill when several documents need the same behaviour: it costs no context load, only one pointer line at each caller.
 
 ## Router skills
 
-When user-invoked skills multiply past what you can remember, that piled-up cognitive load is cured by a **router skill**: one user-invoked skill that names the others and when to reach for each, so the human has one skill to remember instead of many. It can only hint, never fire them: user-invoked skills have no description, so nothing but the human can reach them.
+When user-invoked skills multiply past what you can remember, that piled-up cognitive load is cured by a **router skill**: one user-invoked skill that names the others by path, each with the condition for reaching it, so the human has one skill to remember instead of many. Once the human starts the router, it fires the others itself.

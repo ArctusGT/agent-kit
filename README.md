@@ -31,8 +31,10 @@ leaving the file's other settings and hooks alone, and skips a hook whose
 command is already there. Wiring needs `jq`, which the hooks need anyway.
 
 Some skills, `pentest` and `retro` among them, set `disable-model-invocation`.
-They run only when typed as a slash command (`/retro`), and an agent asked
-which skills it has will not list them. Linked is all they need.
+They run when typed as a slash command (`/retro`), or when another skill names
+their file (`codebase-design`, `domain-modeling`), and an agent asked which
+skills it has will not list them. A slash command needs the skill linked; a
+call by path needs only the kit.
 
 ## Cloning a project that already uses it
 

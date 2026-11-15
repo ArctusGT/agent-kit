@@ -4,4 +4,4 @@ description: Draw out the intent behind a plan or design, recording terms and de
 disable-model-invocation: true
 ---
 
-Call the Skill tool twice, for "grilling" and "domain-modeling".
+Read `.agents/skills/grilling/SKILL.md` and `.agents/skills/domain-modeling/SKILL.md`, and follow both.

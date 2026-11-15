@@ -7,8 +7,8 @@ The Maintainer gives two things: a **method** (do A, B and C) and an **intent**
 (achieve D, optionally without E). The intent is the fixed point. The method is
 a **premise**, the Maintainer's best guess at the time.
 
-Where the intent itself is unclear, draw it out first: call the Skill tool with
-"grilling".
+Where the intent itself is unclear, draw it out first: read
+`.agents/skills/grilling/SKILL.md` and follow it.
 
 Before drafting or building, hold each part of the method against the intent:
 

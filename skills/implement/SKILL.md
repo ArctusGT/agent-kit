@@ -15,7 +15,7 @@ Implement with a sub-agent -> Review passes, each in a new sub-agent -> Repeat i
 When the Maintainer says to implement a `ready-for-agent` slice:
 
 1. Make the worktree named after the slice, `<effort>/<NNN-slug>`, by running the project's WorktreeCreate hook with the name (it reads `{"name": "<effort>/<NNN-slug>"}` on stdin), or else, from the main checkout, `git worktree add .claude/worktrees/<effort>/<NNN-slug> -b worktree-<effort>/<NNN-slug>` and `git submodule update --init` in it, and start a sub-agent that runs the sub-agent section of this skill, giving it the worktree's absolute path.
-2. When the sub-agent reports passes 1–3 done, start a new sub-agent to run /code-review on the slice's commits, noting the model it runs on (the `model` you pass, else the harness's default sub-agent model), and wait for its report. Never run a review yourself. Record every pass's findings in the ledger (see `Passes`).
+2. When the sub-agent reports passes 1–3 done, start a new sub-agent that reads `.agents/skills/code-review/SKILL.md` and follows it on the slice's commits, noting the model it runs on (the `model` you pass, else the harness's default sub-agent model), and wait for its report. Never run a review yourself. Record every pass's findings in the ledger (see `Passes`).
 3. If the report has findings, send them to the implementing sub-agent with SendMessage, which resumes it with its context. Wait for its report that the fixes are committed, then run the next round or end the rounds, as `Rounds` says.
 4. When the rounds end, tell the implementing sub-agent to set the Status, naming the model noted in step 2, and wait for its report that it is committed.
 5. Land the slice's branch, as `Landing` says.
@@ -28,9 +28,9 @@ When the implementing sub-agent hands up a question, put it to the Maintainer as
 
 Implement the work described in the spec or slice, then put it through review passes 1–3 before reporting back.
 
-1. **Implement.** Work in the worktree named after the slice (`<effort>/<NNN-slug>`, branch `worktree-<effort>/<NNN-slug>`), so the worktree and the slice name each other. Use /tdd where possible, at pre-agreed seams. Run typechecking and single test files regularly.
+1. **Implement.** Work in the worktree named after the slice (`<effort>/<NNN-slug>`, branch `worktree-<effort>/<NNN-slug>`), so the worktree and the slice name each other. Where possible, follow `.agents/skills/tdd/SKILL.md`, at pre-agreed seams. Run typechecking and single test files regularly.
 2. **Prove it.** Get proof for every change you made. See `Proof`.
-3. **Commit once per acceptance criterion.** Do the work for every criterion. A criterion marked `**Maintainer:**` (`docs/agents/SLICE-TEMPLATE.md`) is checked by the Maintainer, not you: leave it unticked, whatever its wording. When a criterion is confirmed, tick it in the slice and commit the tick with the work that met it, using /commit-messages. Run the full test suite before the last commit.
+3. **Commit once per acceptance criterion.** Do the work for every criterion. A criterion marked `**Maintainer:**` (`docs/agents/SLICE-TEMPLATE.md`) is checked by the Maintainer, not you: leave it unticked, whatever its wording. When a criterion is confirmed, tick it in the slice and commit the tick with the work that met it, with a message written as `.agents/skills/commit-messages/SKILL.md` says. Run the full test suite before the last commit.
 4. **Run passes 1–3**, as `Passes` says, fixing each pass's findings, as `Review` says, before starting the next.
 5. **Stop before `code-review`.** Report to the session what was committed and each pass's findings, and stop, with no Status set. The session runs `code-review` and sends its findings: fix them, commit, and report again.
 6. **Set the Status** when the session says the rounds have ended, as `Landing` says, and report that it is committed.
@@ -43,12 +43,12 @@ Fix what each finding names, and nothing more. A finding that reaches past the s
 
 ### Passes
 
-Each pass reads the code the previous pass's fixes left, so they run in this order and never in parallel, each in a new sub-agent on this slice's commits:
+Each pass reads the code the previous pass's fixes left, so they run in this order and never in parallel, each in a new sub-agent on this slice's commits, which reads the pass's skill file and follows it:
 
-1. /structural-review: does the code's shape match the domain?
-2. /method-review: is each method as clear as it could be?
-3. /hierarchical-documentation: names and comments. It edits in place; read its changes before committing them, and use its commit-message notes.
-4. /code-review: the spec, the repo's standards, and stale READMEs. The session starts this one, never the implementing sub-agent.
+1. `.agents/skills/structural-review/SKILL.md`: does the code's shape match the domain?
+2. `.agents/skills/method-review/SKILL.md`: is each method as clear as it could be?
+3. `.agents/skills/hierarchical-documentation/SKILL.md`: names and comments. It edits in place; read its changes before committing them, and use its commit-message notes.
+4. `.agents/skills/code-review/SKILL.md`: the spec, the repo's standards, and stale READMEs. The session starts this one, never the implementing sub-agent.
 
 The session keeps a ledger of the findings in its scratchpad: id, pass, round, outcome, and usage where a report gives it. It records what the reports say, never a guess.
 

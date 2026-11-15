@@ -58,7 +58,7 @@ Splitting one document into two spends one of the two loads, so split only when 
 - **By sequence**: split a run of steps where the post-completion steps tempt the agent to rush the one in front of it. Keeping them out of view drives more legwork on the current task. Beware the reverse: merging sequences exposes each step's later steps to what follows, inviting premature completion.
 - **By invocation**, skill-specific: see [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md).
 
-Each skill **stands alone**: it carries the behaviour it needs and names no other skill. A call into another skill is a **dependency** that fails quietly — unlinked, uninstalled or renamed, the call simply does not happen, and nothing reports it — and it drags the target's assumptions in with it. Inline the behaviour instead. Where a skill must point outward, point at a document.
+Each skill **stands alone**: it carries the behaviour only it needs. Behaviour several skills need lives in one skill, and the others reach it by naming its file, never by its name. A call by name is a **dependency** that fails quietly — unlinked, uninstalled or renamed, the call simply does not happen, and nothing reports it. A call by path reads a file every project carrying the kit has, and fails loudly where it does not; [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md) has the form.
 
 ## Leading words
 
