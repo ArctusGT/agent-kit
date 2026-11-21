@@ -2,7 +2,7 @@
 
 **Category:** enhancement
 **Summary:** A SessionStart hook gives each session a `.scratch/<session-id>/` and sweeps stale scratch and research
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
 **Current behavior:**
 Scratch work goes to the harness's scratchpad, outside the repo, so it loses

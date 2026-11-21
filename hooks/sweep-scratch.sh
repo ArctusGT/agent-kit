@@ -4,7 +4,7 @@
 # context, then sweeps stale material. DELETES FILES, inside the project only:
 #   - each other folder under .scratch/ with nothing inside modified in the
 #     last 24 hours
-#   - files under .research/ not modified in 14 days, then any folders left empty
+#   - files under .research/ not modified in 14 days, then every empty folder
 # Prints what it removed. Never follows a symlink (a stale link is removed
 # itself, its target is not touched), and leaves a git-tracked file alone,
 # reporting it. Never fails the session: on any error it says so and exits 0.
@@ -55,7 +55,7 @@ find_repos() {
 }
 
 # Remove the untracked files and links under relative path $1, reporting
-# tracked ones, then folders left empty below $1. An optional $2 limits it to
+# tracked ones, then every empty folder below $1. An optional $2 limits it to
 # those older than that many minutes. A git answer other than "tracked" (0)
 # or "not tracked" (1) is a git failure: the file is left alone.
 # Symlinks are matched as links by find -P and never entered.
