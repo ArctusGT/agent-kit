@@ -29,7 +29,7 @@ case "$path" in "$project"/*) ;; *) exit 0 ;; esac
 relative=${path#"$project"/}
 
 if [[ $relative =~ ^\.efforts/[^/]+/[^/]+\.md$ ]]; then
-  # Where the generator is from the project root: bare when the kit is the project.
+  # The generator's path from the project root: bare when the kit is the project.
   kit=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
   if [ "$kit" = "$(cd "$project" && pwd -P)" ]; then
     new_slice=bin/new-slice
