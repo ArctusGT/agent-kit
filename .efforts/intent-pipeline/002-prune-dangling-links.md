@@ -2,7 +2,7 @@
 
 **Category:** enhancement
 **Summary:** `link.sh` removes links to kit entries that no longer exist
-**Status:** ready-for-agent
+**Status:** ready-for-closure
 
 **Current behavior:**
 `link.sh` makes and re-points symlinks from a project into the kit, but never
@@ -20,14 +20,14 @@ anything is pruned.
 
 **Key interfaces:**
 - `link.sh --prune`: new mode
-- `link.sh --list`: a state for a dangling link
+- `link.sh --list`: a "gone" section naming each dangling link
 
 **Acceptance criteria:**
-- [ ] In a throwaway project linking a kit entry that is then removed, `--prune` removes that link and prints it
-- [ ] A real file at a link target and a symlink pointing outside the kit both survive `--prune`
-- [ ] A second `--prune` run removes nothing and says so
-- [ ] `--list` shows a dangling link with a distinct state
-- [ ] `link.sh --help` describes `--prune`
+- [x] In a throwaway project linking a kit entry that is then removed, `--prune` removes that link and prints it
+- [x] A real file at a link target and a symlink pointing outside the kit both survive `--prune`
+- [x] A second `--prune` run removes nothing and says so
+- [x] `--list` shows a dangling link in a "gone" section
+- [x] `link.sh --help` describes `--prune`
 
 **Out of scope:**
 - Linking newly added kit entries automatically
