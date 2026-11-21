@@ -113,21 +113,22 @@ link_one() {
 }
 
 # Paths of the project's links into the kit whose target no longer exists, in
-# the directories link_one links into.
+# the directories link_one links into. All four sit two levels below the
+# project root, so a link into the kit starts with ../../<kit>/.
 dangling_links() {
-  local l
-  for l in .claude/rules/* .claude/skills/* .claude/commands/* docs/agents/*; do
-    [ -L "$l" ] && [ ! -e "$l" ] || continue
-    case "$(readlink "$l")" in ../../"$REL_KIT"/*) printf '%s\n' "$l" ;; esac
+  local link
+  for link in .claude/rules/* .claude/skills/* .claude/commands/* docs/agents/*; do
+    [ -L "$link" ] && [ ! -e "$link" ] || continue
+    case "$(readlink "$link")" in ../../"$REL_KIT"/*) printf '%s\n' "$link" ;; esac
   done
 }
 
 prune() {
-  local l found=0
-  for l in $(dangling_links); do
-    rm "$l"; echo "  x  $l — removed, its kit entry is gone"; found=1
+  local link pruned_any=0
+  for link in $(dangling_links); do
+    rm "$link"; echo "  x  $link — removed, its kit entry is gone"; pruned_any=1
   done
-  [ "$found" = 1 ] || echo "nothing to prune"
+  [ "$pruned_any" = 1 ] || echo "nothing to prune"
 }
 
 case "${1:---list}" in
@@ -150,7 +151,7 @@ case "${1:---list}" in
       printf '  %-34s %s\n' "$n" "$state"
     done
     echo "gone:"
-    for l in $(dangling_links); do printf '  %-34s %s\n' "$l" "dangling, kit entry gone"; done ;;
+    for link in $(dangling_links); do printf '  %-34s %s\n' "$link" "dangling, kit entry gone"; done ;;
   --prune) prune ;;
   --all)
     for g in rules skills commands docs hooks; do
