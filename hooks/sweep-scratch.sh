@@ -28,20 +28,22 @@ fi
 
 set -uo pipefail
 
-# Remove every untracked file or link under $1 that is older than $2 minutes
-# (0 removes all), reporting tracked ones, then folders left empty below $1.
+# Remove the untracked files and links under relative path $1, reporting
+# tracked ones, then folders left empty below $1. An optional $2 limits it to
+# those older than that many minutes. A git answer other than "tracked" (0)
+# or "not tracked" (1) is a git failure: the file is left alone.
 # Symlinks are matched as links by find -P and never entered.
 sweep_files() {
-  local dir=$1 minutes=$2 f
+  local dir=$1 age=() f
+  [ -n "${2:-}" ] && age=(-mmin +"$2")
   while IFS= read -r -d '' f; do
-    if git -C "$PROJECT" ls-files --error-unmatch -- "${f#"$PROJECT"/}" >/dev/null 2>&1; then
-      echo "sweep-scratch: kept tracked file ${f#"$PROJECT"/}"
-    elif rm -f -- "$f"; then
-      echo "sweep-scratch: removed ${f#"$PROJECT"/}"
-    else
-      echo "sweep-scratch: could not remove ${f#"$PROJECT"/}"
-    fi
-  done < <(find -P "$dir" \( -type f -o -type l \) -mmin +"$minutes" -print0)
+    git ls-files --error-unmatch -- "$f" >/dev/null 2>&1
+    case $? in
+      0) echo "sweep-scratch: kept tracked file $f" ;;
+      1) if rm -f -- "$f"; then echo "sweep-scratch: removed $f"; else echo "sweep-scratch: could not remove $f"; fi ;;
+      *) echo "sweep-scratch: git failed on $f, left alone" ;;
+    esac
+  done < <(find -P "$dir" \( -type f -o -type l \) "${age[@]}" -print0)
   find -P "$dir" -mindepth 1 -depth -type d -empty -delete 2>/dev/null
 }
 
@@ -66,12 +68,12 @@ main() {
     d=${d%/}
     [ -d "$d" ] && [ ! -L "$d" ] && [ "$d" != ".scratch/$session" ] || continue
     [ -z "$(find -P "$d" -mmin -$((SCRATCH_MAX_AGE_HOURS * 60)) -print -quit)" ] || continue
-    sweep_files "$PROJECT/$d" 0
+    sweep_files "$d"
     rmdir "$d" 2>/dev/null && echo "sweep-scratch: removed $d/"
   done
 
   if [ -d .research ] && [ ! -L .research ]; then
-    sweep_files "$PROJECT/.research" $((RESEARCH_MAX_AGE_DAYS * 24 * 60))
+    sweep_files .research $((RESEARCH_MAX_AGE_DAYS * 24 * 60))
   fi
 }
 
