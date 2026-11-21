@@ -24,12 +24,12 @@ the same way it blocks one under the project's, and names how to make it.
 - The effort tracker doc: where the kit's own work is tracked
 
 **Acceptance criteria:**
-- [ ] Run from inside the kit, `new-slice <effort> <slug>` writes under the kit's `.efforts/` and prints that path
-- [ ] Numbering inside the kit counts the kit's files and history, not the project's
-- [ ] Run from the project root, `new-slice` writes where it does today
-- [ ] `block-new-docs` blocks writing a new `.efforts/<effort>/<name>.md` under the kit, with a message naming `new-slice` run from inside the kit
-- [ ] `new-slice --help` states both cases
-- [ ] The effort tracker doc says work on the kit is tracked in the kit's own `.efforts/`
+- [x] Run from inside the kit, `new-slice <effort> <slug>` writes under the kit's `.efforts/` and prints that path
+- [x] Numbering inside the kit counts the kit's files and history, not the project's
+- [x] Run from the project root, `new-slice` writes where it does today
+- [x] `block-new-docs` blocks writing a new `.efforts/<effort>/<name>.md` under the kit, with a message naming `new-slice` run from inside the kit
+- [x] `new-slice --help` states both cases
+- [x] The effort tracker doc says work on the kit is tracked in the kit's own `.efforts/`
 
 **Out of scope:**
 - Moving slices that already exist in any project

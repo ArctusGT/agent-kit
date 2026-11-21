@@ -3,13 +3,17 @@
 #
 #   .agents/bin/new-slice <effort> <slug>
 #
-# Writes .efforts/<effort>/<NNN>-<slug>.md in the project that holds the kit,
-# creating the effort directory if needed, and prints the path. The slice's
+# Writes .efforts/<effort>/<NNN>-<slug>.md, creating the effort directory if
+# needed, and prints the path relative to the project it chose. The slice's
 # heading is the slug with its hyphens turned to spaces.
 #
+# Which project: run from at or below the kit's own working tree, the kit is
+# the project and the slice lands in the kit's .efforts/. Run from anywhere
+# else, the project is the directory holding the kit, as before.
+#
 # Closed slices are deleted, so NNN is one past the highest number found
-# either in the directory or anywhere in git history for that effort. A number
-# is never handed out twice.
+# either in the directory or anywhere in git history, in that project, for that
+# effort. A number is never handed out twice.
 set -euo pipefail
 
 usage() {
@@ -25,8 +29,11 @@ for name in "$effort" "$slug"; do
   [[ $name =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "new-slice: '$name' must be lower-case letters, digits and hyphens" >&2; exit 1; }
 done
 
-KIT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-PROJECT=$(dirname "$KIT")
+KIT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+case "$(pwd -P)/" in
+  "$KIT"/*) PROJECT=$KIT ;;
+  *) PROJECT=$(dirname "$KIT") ;;
+esac
 dir=.efforts/$effort
 
 # Every slice filename this effort has had: on disk now, and in history.
