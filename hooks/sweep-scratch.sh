@@ -43,7 +43,7 @@ sweep_files() {
       1) if rm -f -- "$f"; then echo "sweep-scratch: removed $f"; else echo "sweep-scratch: could not remove $f"; fi ;;
       *) echo "sweep-scratch: git failed on $f, left alone" ;;
     esac
-  done < <(find -P "$dir" \( -type f -o -type l \) "${age[@]}" -print0)
+  done < <(find -P "$dir" \( -type f -o -type l \) ${age[@]+"${age[@]}"} -print0)
   find -P "$dir" -mindepth 1 -depth -type d -empty -delete 2>/dev/null
 }
 
