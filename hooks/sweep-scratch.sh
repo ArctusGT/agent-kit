@@ -36,6 +36,8 @@ set -uo pipefail
 sweep_files() {
   local dir=$1 age=() f
   [ -n "${2:-}" ] && age=(-mmin +"$2")
+  # ${age[@]+...} expands to nothing for an empty array; a bare "${age[@]}" is
+  # an unbound variable under set -u in macOS's bash 3.2.
   while IFS= read -r -d '' f; do
     git ls-files --error-unmatch -- "$f" >/dev/null 2>&1
     case $? in
@@ -49,7 +51,7 @@ sweep_files() {
 
 main() {
   command -v jq >/dev/null || { echo "sweep-scratch: needs jq, skipped"; return; }
-  local input session cwd d
+  local input session cwd scratch_dir
   input=$(cat)
   session=$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)
   cwd=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)
@@ -64,12 +66,12 @@ main() {
   mkdir -p ".scratch/$session" && echo "Scratch folder for this session: $PROJECT/.scratch/$session"
 
   # A folder is stale when nothing in it, itself included, is newer than the limit.
-  for d in .scratch/*/; do
-    d=${d%/}
-    [ -d "$d" ] && [ ! -L "$d" ] && [ "$d" != ".scratch/$session" ] || continue
-    [ -z "$(find -P "$d" -mmin -$((SCRATCH_MAX_AGE_HOURS * 60)) -print -quit)" ] || continue
-    sweep_files "$d"
-    rmdir "$d" 2>/dev/null && echo "sweep-scratch: removed $d/"
+  for scratch_dir in .scratch/*/; do
+    scratch_dir=${scratch_dir%/}
+    [ -d "$scratch_dir" ] && [ ! -L "$scratch_dir" ] && [ "$scratch_dir" != ".scratch/$session" ] || continue
+    [ -z "$(find -P "$scratch_dir" -mmin -$((SCRATCH_MAX_AGE_HOURS * 60)) -print -quit)" ] || continue
+    sweep_files "$scratch_dir"
+    rmdir "$scratch_dir" 2>/dev/null && echo "sweep-scratch: removed $scratch_dir/"
   done
 
   if [ -d .research ] && [ ! -L .research ]; then
