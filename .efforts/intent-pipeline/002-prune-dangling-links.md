@@ -23,11 +23,11 @@ anything is pruned.
 - `link.sh --list`: a state for a dangling link
 
 **Acceptance criteria:**
-- [ ] In a throwaway project linking a kit entry that is then removed, `--prune` removes that link and prints it
-- [ ] A real file at a link target and a symlink pointing outside the kit both survive `--prune`
-- [ ] A second `--prune` run removes nothing and says so
-- [ ] `--list` shows a dangling link with a distinct state
-- [ ] `link.sh --help` describes `--prune`
+- [x] In a throwaway project linking a kit entry that is then removed, `--prune` removes that link and prints it
+- [x] A real file at a link target and a symlink pointing outside the kit both survive `--prune`
+- [x] A second `--prune` run removes nothing and says so
+- [x] `--list` shows a dangling link with a distinct state
+- [x] `link.sh --help` describes `--prune`
 
 **Out of scope:**
 - Linking newly added kit entries automatically

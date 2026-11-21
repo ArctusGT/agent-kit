@@ -6,9 +6,14 @@
 #   .agents/bin/link.sh --all
 #   .agents/bin/link.sh --group ansible
 #   .agents/bin/link.sh --group hooks
+#   .agents/bin/link.sh --prune
 #
 # A real file already at the target is a deliberate local override: it is
 # reported and left alone. A symlink is re-pointed, so re-running is safe.
+#
+# --prune removes the links into the kit whose target the kit no longer has,
+# and prints each. Real files and links pointing elsewhere are left alone.
+# --list shows such a link under "gone".
 #
 # Hooks are not symlinked. Each hook's header carries its "Wire it up" entry,
 # which is merged into the project's .claude/settings.json; an event that
@@ -107,6 +112,26 @@ link_one() {
   echo "  ->  $dst"
 }
 
+# Paths of the project's links into the kit whose target no longer exists, in
+# the directories link_one links into.
+dangling_links() {
+  local l t
+  for l in .claude/rules/* .claude/skills/* .claude/commands/* docs/agents/*; do
+    [ -L "$l" ] && [ ! -e "$l" ] || continue
+    t=$(readlink "$l")
+    while [ "${t#../}" != "$t" ]; do t=${t#../}; done
+    case "$t" in "$REL_KIT"/*) printf '%s\n' "$l" ;; esac
+  done
+}
+
+prune() {
+  local l found=0
+  for l in $(dangling_links); do
+    rm "$l"; echo "  x  $l — removed, its kit entry is gone"; found=1
+  done
+  [ "$found" = 1 ] || echo "nothing to prune"
+}
+
 case "${1:---list}" in
   --list)
     for g in rules ansible skills commands docs; do
@@ -125,7 +150,10 @@ case "${1:---list}" in
       elif hook_wired "$n"; then state="wired"
       else state="-"; fi
       printf '  %-34s %s\n' "$n" "$state"
-    done ;;
+    done
+    echo "gone:"
+    for l in $(dangling_links); do printf '  %-34s %s\n' "$l" "dangling, kit entry gone"; done ;;
+  --prune) prune ;;
   --all)
     for g in rules skills commands docs hooks; do
       for n in $(group_names "$g"); do link_one "$n"; done
