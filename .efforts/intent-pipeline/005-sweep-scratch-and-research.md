@@ -2,7 +2,7 @@
 
 **Category:** enhancement
 **Summary:** A SessionStart hook gives each session a `.scratch/<session-id>/` and sweeps stale scratch and research
-**Status:** ready-for-human
+**Status:** ready-for-closure
 
 **Current behavior:**
 Scratch work goes to the harness's scratchpad, outside the repo, so it loses
@@ -42,7 +42,7 @@ stale findings are to trust.
 - [x] `--help` prints what it does, what it reads and that it deletes
 - [x] Wiring it with `link.sh` adds both directories to `.gitignore` once, and running it again adds nothing
 - [x] The kit's guidance names `.scratch/<session-id>/` in place of the scratchpad, as listed under Desired behavior
-- [ ] **Maintainer:** a new session in timelab shows its scratch path, and a scratch folder seeded as old is gone
+- [x] **Maintainer:** a new session in timelab shows its scratch path, and a scratch folder seeded as old is gone
 
 **Out of scope:**
 - Where `handoff` writes its document
