@@ -115,12 +115,10 @@ link_one() {
 # Paths of the project's links into the kit whose target no longer exists, in
 # the directories link_one links into.
 dangling_links() {
-  local l t
+  local l
   for l in .claude/rules/* .claude/skills/* .claude/commands/* docs/agents/*; do
     [ -L "$l" ] && [ ! -e "$l" ] || continue
-    t=$(readlink "$l")
-    while [ "${t#../}" != "$t" ]; do t=${t#../}; done
-    case "$t" in "$REL_KIT"/*) printf '%s\n' "$l" ;; esac
+    case "$(readlink "$l")" in ../../"$REL_KIT"/*) printf '%s\n' "$l" ;; esac
   done
 }
 
