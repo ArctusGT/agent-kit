@@ -50,7 +50,7 @@ Each pass reads the code the previous pass's fixes left, so they run in this ord
 3. `.agents/skills/hierarchical-documentation/SKILL.md`: names and comments. It edits in place; read its changes before committing them, and use its commit-message notes.
 4. `.agents/skills/code-review/SKILL.md`: the spec, the repo's standards, and stale READMEs. The session starts this one, never the implementing sub-agent.
 
-The session keeps a ledger of the findings in its scratchpad: id, pass, round, outcome, and usage where a report gives it. It records what the reports say, never a guess.
+The session keeps a ledger of the findings in its `.scratch/<session-id>/`: id, pass, round, outcome, and usage where a report gives it. It records what the reports say, never a guess.
 
 ### Rounds
 
@@ -76,7 +76,7 @@ Proof is evidence you observed yourself in this session: command output, a repro
 - Reproduce the original failure, apply the fix, then watch the same reproduction pass.
 - Run any checks the repo's CI runs.
 - Add one focused test that fails without the fix, where no test covers the behaviour yet and the repo has a test setup.
-- For UI and runtime behaviour, run the app, code or service and look at the change. Green mocked tests do not prove the user experience works. Put screenshots in the scratchpad.
+- For UI and runtime behaviour, run the app, code or service and look at the change. Green mocked tests do not prove the user experience works. Put screenshots in `.scratch/<session-id>/`.
 
 ## Ask the Maintainer
 

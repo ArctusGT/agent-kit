@@ -18,7 +18,8 @@
 # Hooks are not symlinked. Each hook's header carries its "Wire it up" entry,
 # which is merged into the project's .claude/settings.json; an event that
 # already runs the hook's command is left alone. Wiring a hook needs jq.
-# --all wires every hook along with the rest.
+# --all wires every hook along with the rest. Wiring sweep-scratch also lists
+# .scratch/ and .research/ in the project's .gitignore, once.
 set -euo pipefail
 
 if [ "${1:-}" = "--help" ]; then
@@ -81,9 +82,23 @@ hook_wired() {
     jq -e --arg c "$(hook_command "$1")" '[.hooks[]?[]?.hooks[]?.command] | index($c)' "$SETTINGS" >/dev/null
 }
 
+# Append each given line to .gitignore unless it is already listed.
+ignore_lines() {
+  local l
+  for l in "$@"; do
+    grep -qxF "$l" .gitignore 2>/dev/null && continue
+    # A last line with no newline would swallow the appended one.
+    [ -s .gitignore ] && [ -n "$(tail -c1 .gitignore)" ] && echo >> .gitignore
+    echo "$l" >> .gitignore
+    echo "  ->  .gitignore — $l"
+  done
+}
+
 wire_hook() {
   local n=$1 entry tmp
   command -v jq >/dev/null || { echo "  !  $n — wiring a hook needs jq"; return; }
+  # sweep-scratch deletes under these, so they must never be committed.
+  [ "$n" = sweep-scratch ] && ignore_lines .scratch/ .research/
   if hook_wired "$n"; then echo "  =  $SETTINGS — $n already wired"; return; fi
   entry=$(hook_entry "$KIT/hooks/$n.sh")
   mkdir -p "$(dirname "$SETTINGS")"

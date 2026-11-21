@@ -50,6 +50,12 @@ What still holds inside: every measurement carries its method, so it can be
 taken again (`.agents/docs/standards/documentation-gradient.md`). A findings file with no method
 is a list of guesses.
 
+## Stale findings are swept
+
+The `sweep-scratch` hook removes files under `.research/` not modified in 14
+days. Alignment work is cheaper to redo than stale findings are to trust, so
+what is worth keeping is promoted before then, as above.
+
 ## Why this needs a rule
 
 Unreviewed material read without being asked becomes a source. It is
