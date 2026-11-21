@@ -2,7 +2,7 @@
 
 **Category:** enhancement
 **Summary:** `new-slice` drafts into the kit's own `.efforts/` when run from inside the kit
-**Status:** ready-for-agent
+**Status:** ready-for-closure
 
 **Current behavior:**
 `new-slice` always treats the directory holding the kit as the project, so a
