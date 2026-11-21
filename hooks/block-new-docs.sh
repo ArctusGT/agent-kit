@@ -28,15 +28,19 @@ project=${CLAUDE_PROJECT_DIR:-$PWD}
 case "$path" in "$project"/*) ;; *) exit 0 ;; esac
 relative=${path#"$project"/}
 
-if [[ $relative =~ ^\.efforts/[^/]+/[^/]+\.md$ ]]; then
-  # The generator's path from the project root: bare when the kit is the project.
+# A generator's path from the project root: bare when the kit is the project.
+generator() {
+  local kit
   kit=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
   if [ "$kit" = "$(cd "$project" && pwd -P)" ]; then
-    new_slice=bin/new-slice
+    echo "bin/$1"
   else
-    new_slice=.agents/bin/new-slice
+    echo ".agents/bin/$1"
   fi
-  echo "Blocked: new slices come from the template. Run $new_slice <effort> <slug>, then edit the file it prints." >&2
+}
+
+if [[ $relative =~ ^\.efforts/[^/]+/[^/]+\.md$ ]]; then
+  echo "Blocked: new slices come from the template. Run $(generator new-slice) <effort> <slug>, then edit the file it prints." >&2
   exit 2
 fi
 
@@ -48,7 +52,7 @@ if [[ $relative =~ ^\.agents/\.efforts/[^/]+/[^/]+\.md$ ]]; then
 fi
 
 if [ "${relative##*/}" = README.md ]; then
-  echo "Blocked: new READMEs come from the template. Run .agents/bin/new-readme <dir>, then edit the file it prints." >&2
+  echo "Blocked: new READMEs come from the template. Run $(generator new-readme) <dir>, then edit the file it prints." >&2
   exit 2
 fi
 

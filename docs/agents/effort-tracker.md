@@ -14,8 +14,7 @@ For a slice, run `.agents/bin/new-slice <effort> <slug>` and fill in the file it
 prints.
 
 Work on the kit itself is tracked in the kit's own `.efforts/`, so other
-projects linking it see it. Run `new-slice` from inside `.agents` for those; run
-from the project root it writes to the project's `.efforts/`.
+projects linking it see it. `new-slice --help` says where to run it from.
 
 ## When a skill says "fetch the relevant slice"
 
