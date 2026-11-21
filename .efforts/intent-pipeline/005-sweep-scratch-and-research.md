@@ -34,13 +34,13 @@ stale findings are to trust.
 - The 24-hour and 14-day thresholds, as named constants in the hook's header
 
 **Acceptance criteria:**
-- [ ] Given a seeded project, the hook creates the session's folder and prints its path
-- [ ] A `.scratch/` folder older than 24 hours is removed; the current session's folder and a recently touched one survive
-- [ ] A `.research/` file older than 14 days is removed; a newer one survives; emptied folders go
-- [ ] A symlink under either directory is not followed, and a tracked file is left alone and reported
-- [ ] The hook exits 0 when the project has neither directory, and when a removal fails
-- [ ] `--help` prints what it does, what it reads and that it deletes
-- [ ] Wiring it with `link.sh` adds both directories to `.gitignore` once, and running it again adds nothing
+- [x] Given a seeded project, the hook creates the session's folder and prints its path
+- [x] A `.scratch/` folder older than 24 hours is removed; the current session's folder and a recently touched one survive
+- [x] A `.research/` file older than 14 days is removed; a newer one survives; emptied folders go
+- [x] A symlink under either directory is not followed, and a tracked file is left alone and reported
+- [x] The hook exits 0 when the project has neither directory, and when a removal fails
+- [x] `--help` prints what it does, what it reads and that it deletes
+- [x] Wiring it with `link.sh` adds both directories to `.gitignore` once, and running it again adds nothing
 - [ ] The kit's guidance names `.scratch/<session-id>/` in place of the scratchpad, as listed under Desired behavior
 - [ ] **Maintainer:** a new session in timelab shows its scratch path, and a scratch folder seeded as old is gone
 
