@@ -28,19 +28,20 @@ project=${CLAUDE_PROJECT_DIR:-$PWD}
 case "$path" in "$project"/*) ;; *) exit 0 ;; esac
 relative=${path#"$project"/}
 
-# Where the generator is from the project root: bare when the kit is the project.
-kit=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
-if [ "$kit" = "$(cd "$project" && pwd -P)" ]; then
-  new_slice=bin/new-slice
-else
-  new_slice=.agents/bin/new-slice
-fi
-
 if [[ $relative =~ ^\.efforts/[^/]+/[^/]+\.md$ ]]; then
+  # Where the generator is from the project root: bare when the kit is the project.
+  kit=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+  if [ "$kit" = "$(cd "$project" && pwd -P)" ]; then
+    new_slice=bin/new-slice
+  else
+    new_slice=.agents/bin/new-slice
+  fi
   echo "Blocked: new slices come from the template. Run $new_slice <effort> <slug>, then edit the file it prints." >&2
   exit 2
 fi
 
+# From the project root the bare generator would write into the project, so
+# this message says to run it from inside the kit.
 if [[ $relative =~ ^\.agents/\.efforts/[^/]+/[^/]+\.md$ ]]; then
   echo "Blocked: new slices about the kit come from the template. From inside .agents, run bin/new-slice <effort> <slug>, then edit the file it prints." >&2
   exit 2
