@@ -150,8 +150,11 @@ case "${1:---list}" in
       else state="-"; fi
       printf '  %-34s %s\n' "$n" "$state"
     done
-    echo "gone:"
-    for link in $(dangling_links); do printf '  %-34s %s\n' "$link" "dangling, kit entry gone"; done ;;
+    gone=$(dangling_links)
+    if [ -n "$gone" ]; then
+      echo "gone:"
+      for link in $gone; do printf '  %-34s %s\n' "$link" "dangling, kit entry gone"; done
+    fi ;;
   --prune) prune ;;
   --all)
     for g in rules skills commands docs hooks; do

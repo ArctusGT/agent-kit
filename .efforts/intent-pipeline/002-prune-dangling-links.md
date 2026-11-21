@@ -2,7 +2,7 @@
 
 **Category:** enhancement
 **Summary:** `link.sh` removes links to kit entries that no longer exist
-**Status:** ready-for-agent
+**Status:** ready-for-closure
 
 **Current behavior:**
 `link.sh` makes and re-points symlinks from a project into the kit, but never
