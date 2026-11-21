@@ -3,8 +3,8 @@
 # README.md inside the project, and names the generator that makes one from
 # the kit's template. Editing a file that already exists is never blocked.
 #
-# A slice is any .efforts/<effort>/<name>.md. Paths outside the project are
-# left alone.
+# A slice is any .efforts/<effort>/<name>.md, in the project or in the kit's
+# own .efforts/ under it. Paths outside the project are left alone.
 #
 # Reads the hook's JSON from stdin and changes nothing. Exit 0 lets the write
 # go ahead; exit 2 blocks it and hands stderr back to the Agent.
@@ -28,13 +28,31 @@ project=${CLAUDE_PROJECT_DIR:-$PWD}
 case "$path" in "$project"/*) ;; *) exit 0 ;; esac
 relative=${path#"$project"/}
 
+# A generator's path from the project root: bare when the kit is the project.
+generator() {
+  local kit
+  kit=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+  if [ "$kit" = "$(cd "$project" && pwd -P)" ]; then
+    echo "bin/$1"
+  else
+    echo ".agents/bin/$1"
+  fi
+}
+
 if [[ $relative =~ ^\.efforts/[^/]+/[^/]+\.md$ ]]; then
-  echo "Blocked: new slices come from the template. Run .agents/bin/new-slice <effort> <slug>, then edit the file it prints." >&2
+  echo "Blocked: new slices come from the template. Run $(generator new-slice) <effort> <slug>, then edit the file it prints." >&2
+  exit 2
+fi
+
+# From the project root the bare generator would write into the project, so
+# this message says to run it from inside the kit.
+if [[ $relative =~ ^\.agents/\.efforts/[^/]+/[^/]+\.md$ ]]; then
+  echo "Blocked: new slices about the kit come from the template. From inside .agents, run bin/new-slice <effort> <slug>, then edit the file it prints." >&2
   exit 2
 fi
 
 if [ "${relative##*/}" = README.md ]; then
-  echo "Blocked: new READMEs come from the template. Run .agents/bin/new-readme <dir>, then edit the file it prints." >&2
+  echo "Blocked: new READMEs come from the template. Run $(generator new-readme) <dir>, then edit the file it prints." >&2
   exit 2
 fi
 
