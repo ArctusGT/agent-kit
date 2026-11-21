@@ -26,7 +26,7 @@ interp='(^|[[:space:];&|(])(python[0-9.]*|bash|sh|zsh)([[:space:]]+-[A-Za-z]+)*[
 if [[ $cmd =~ $interp ]]; then
   script=${cmd#*"${BASH_REMATCH[0]}"}
   if [[ $script == *$'\n'* ]]; then
-    echo "Blocked: a multi-line script passed with -c. Write it to the scratchpad and run the file (AGENTS.md, \"Scripts\")." >&2
+    echo "Blocked: a multi-line script passed with -c. Write it to the session's .scratch/<session-id>/ and run the file (AGENTS.md, \"Scripts\")." >&2
     exit 2
   fi
 fi

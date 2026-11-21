@@ -41,7 +41,7 @@ stale findings are to trust.
 - [x] The hook exits 0 when the project has neither directory, and when a removal fails
 - [x] `--help` prints what it does, what it reads and that it deletes
 - [x] Wiring it with `link.sh` adds both directories to `.gitignore` once, and running it again adds nothing
-- [ ] The kit's guidance names `.scratch/<session-id>/` in place of the scratchpad, as listed under Desired behavior
+- [x] The kit's guidance names `.scratch/<session-id>/` in place of the scratchpad, as listed under Desired behavior
 - [ ] **Maintainer:** a new session in timelab shows its scratch path, and a scratch folder seeded as old is gone
 
 **Out of scope:**

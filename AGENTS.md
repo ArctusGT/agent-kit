@@ -98,7 +98,7 @@ A branch, this project's or the kit's, stays off origin. Push only the two mains
 
 ## Scripts
 
-A script that changes anything, or whose output you report as evidence, is a file in the scratchpad before it runs. Write it, then run it: as a file it can be read before it runs, fixed when it’s wrong, and re-run to reproduce the result. A short read-only probe can stay inline.
+A script that changes anything, or whose output you report as evidence, is a file in the session's `.scratch/<session-id>/` before it runs. Write it, then run it: as a file it can be read before it runs, fixed when it’s wrong, and re-run to reproduce the result. A short read-only probe can stay inline.
 
 ## Commands
 
