@@ -39,6 +39,7 @@ case "${1:-}" in
   *) echo "sync-kit: takes no arguments (see --help), nothing done"; exit 0 ;;
 esac
 
+# No -e: every failure below is reported as one line, and the hook exits 0.
 set -uo pipefail
 
 say() { echo "sync-kit: $*"; }
@@ -80,32 +81,37 @@ blocker() {
   [ "$kit_branch" = main ] || { echo "the kit is on ${kit_branch:-a detached HEAD}, not main"; return; }
 
   [ -z "$(git -C "$KIT" status --porcelain)" ] || { echo "the kit has uncommitted changes"; return; }
+  # The project records the kit as a gitlink. --ignore-submodules=dirty keeps
+  # the kit's own working tree out of this, leaving a moved pointer or a
+  # staged change.
   [ -z "$(git status --porcelain --ignore-submodules=dirty -- "$KIT")" ] ||
     { echo "the project's $KIT pointer is not at the kit's commit, or has a staged change"; return; }
 }
 
-# Entries of link.sh --list as "<group> <name> <state>", one per line, leaving
-# out the "gone" section.
+# Entries of link.sh --list as "<group>:<name> <state>", one per line, the
+# group keeping its colon, leaving out the "gone" section. A state of "-"
+# means the entry is not linked in this project.
 kit_entries() {
   "$KIT/bin/link.sh" --list 2>/dev/null |
     awk '/^[a-z]+:$/ {g=$1; next} g != "gone:" && /^  / {n=$1; $1=""; sub(/^ +/, ""); print g n, $0}'
 }
 
-# Print the new entries that --list shows as not linked. $1 holds the entries
-# before the fast-forward, $2 after.
+# Print the entries that are in $2 but not $1 and are not linked, as
+# "<group> <name>". Both are kit_entries output, taken before and after the
+# fast-forward.
 report_new_unlinked() {
-  local new
-  new=$(awk 'NR==FNR {seen[$1]; next} $2 == "-" && !($1 in seen) {print $1}' \
-    <(printf '%s\n' "$1") <(printf '%s\n' "$2"))
-  [ -n "$new" ] || return 0
+  local entries_before=$1 entries_after=$2 new_unlinked
+  new_unlinked=$(awk 'NR==FNR {seen[$1]; next} $2 == "-" && !($1 in seen) {print $1}' \
+    <(printf '%s\n' "$entries_before") <(printf '%s\n' "$entries_after"))
+  [ -n "$new_unlinked" ] || return 0
   say "new in the kit and not linked here (link with $KIT/bin/link.sh <name>):"
-  printf '%s\n' "$new" | sed 's/^/  /; s/:/ /'
+  printf '%s\n' "$new_unlinked" | sed 's/^/  /; s/:/ /'
 }
 
 # Fast-forward the kit, commit the bump, prune and report.
 sync_kit() {
-  local before after sha pruned
-  before=$(kit_entries)
+  local entries_before entries_after sha pruned
+  entries_before=$(kit_entries)
   git -C "$KIT" merge --ff-only --quiet origin/main >/dev/null 2>&1 || { say "fast-forward failed, kit left as it was"; return; }
   sha=$(git -C "$KIT" rev-parse --short HEAD)
   git add -- "$KIT" >/dev/null 2>&1 && git commit --quiet -m "Bump kit to $sha" -- "$KIT" >/dev/null 2>&1 ||
@@ -115,8 +121,8 @@ sync_kit() {
   pruned=$("$KIT/bin/link.sh" --prune 2>&1 | grep -v '^nothing to prune$' || true)
   [ -z "$pruned" ] || { say "pruned (tracked link removals are left uncommitted in the project):"; printf '%s\n' "$pruned"; }
 
-  after=$(kit_entries)
-  report_new_unlinked "$before" "$after"
+  entries_after=$(kit_entries)
+  report_new_unlinked "$entries_before" "$entries_after"
 }
 
 main() {
@@ -141,7 +147,7 @@ main() {
 
   behind=$(git -C "$KIT" rev-list --count HEAD..origin/main 2>/dev/null) || { say "kit has no origin/main, skipped"; return; }
   ahead=$(git -C "$KIT" rev-list --count origin/main..HEAD)
-  [ "$behind" -gt 0 ] || [ "$ahead" -gt 0 ] || return 0
+  [ "$behind" -gt 0 ] || [ "$ahead" -gt 0 ] || return 0  # matches origin/main: silent
 
   reason=$(blocker)
   if [ -n "$reason" ]; then
