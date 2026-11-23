@@ -102,8 +102,7 @@ Offer an unsolicited item in one line and leave it out until the Maintainer
 confirms it.
 
 Once a term or decision settles that belongs in the glossary or an ADR, read
-`.agents/skills/domain-modeling/SKILL.md` and follow it to record it
-where it settled.
+`.agents/skills/domain-modeling/SKILL.md` and follow it to record it.
 
 ## Stop
 
