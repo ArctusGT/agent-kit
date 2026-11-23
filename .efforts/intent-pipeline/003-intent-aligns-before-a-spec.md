@@ -57,11 +57,11 @@ points at `intent` instead. `domain-modeling` stays a separate skill.
 - The skills and docs that currently send the reader to `grilling`: `triage`, `improve-codebase-architecture`, the domain doc, `link.sh`'s usage example
 
 **Acceptance criteria:**
-- [ ] `intent` covers every behaviour listed under Desired behavior
-- [ ] `intent`'s description triggers on an unclear objective, on a stated intent, and on a request to be grilled
+- [x] `intent` covers every behaviour listed under Desired behavior
+- [x] `intent`'s description triggers on an unclear objective, on a stated intent, and on a request to be grilled
 - [ ] `grilling` and `grill-with-docs` no longer exist in the kit
 - [ ] `grep -R -E 'grilling|grill-with-docs'` over the kit, excluding `.git` and `.efforts`, finds nothing that names a skill
-- [ ] `intent` names `.agents/skills/prototype/SKILL.md` for the escape hatch and offers `to-spec` at the end
+- [x] `intent` names `.agents/skills/prototype/SKILL.md` for the escape hatch and offers `to-spec` at the end
 - [ ] **Maintainer:** in a real session, `intent` on a fresh request shows the four-way sort, at least one gap-fill marked as confident, and at least one offered quick check
 
 **Out of scope:**

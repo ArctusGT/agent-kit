@@ -1,16 +1,19 @@
 ---
 name: intent
-description: Weigh a requested method against the objective behind it. Use when the Maintainer states an intent ("the intent is", "so that", "I don't want to have to"), or asks for work alongside the reason for it, before drafting a slice or starting the work.
+description: Align on the intent before a spec or a build. Use when the Maintainer states an intent ("the intent is", "so that", "I don't want to have to"), when the objective, what to avoid or a premise is unclear, or when asked to "grill me".
 ---
 
 The Maintainer gives two things: a **method** (do A, B and C) and an **intent**
 (achieve D, optionally without E). The intent is the fixed point. The method is
 a **premise**, the Maintainer's best guess at the time.
 
-Where the intent itself is unclear, draw it out first: read
-`.agents/skills/grilling/SKILL.md` and follow it.
+This skill ends with an intent the Maintainer has accepted, ready for a spec.
+Where the request already meets the stop conditions below and no weighing turns
+anything up, proceed as asked and say nothing.
 
-Before drafting or building, hold each part of the method against the intent:
+## Weigh the method
+
+Hold each part of the method against the intent:
 
 - **A cheaper route.** Something reaches D with less code, fewer moving parts or
   a smaller blast radius. Often the thing to avoid (E, or the W the Maintainer
@@ -19,12 +22,103 @@ Before drafting or building, hold each part of the method against the intent:
 - **A conflict.** Two parts of the method work against each other, or one works
   against D.
 - **An unmeasured premise.** One part depends on something nobody has observed.
-  Name the cheapest proof that would settle it: a read-only probe, a prototype,
-  one measurement.
+  Name the cheapest proof that would settle it.
 
-Where one of these holds, say so in one short message before any work: the
-premise, why it doesn't hold, and the alternative or the proof. Then wait.
-Where none holds, proceed as asked and say nothing about it.
+Say what holds in the next round: the premise, why it doesn't hold, and the
+alternative or the proof.
+
+## Rounds
+
+The **frontier** is every question you can ask _now_ without guessing at answers
+you haven't heard yet. Ask the whole frontier in one round, then wait for the
+answers. Each round's answers reshape what is left: recompute the frontier. A
+question whose answer depends on another question still open in this round
+belongs to a _later_ round.
+
+Format a round like so:
+
+```
+❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+
+➡️ <your recommended answer>
+
+---
+
+❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+
+➡️ <your recommended answer>
+```
+
+Ask through a **scenario**: give an example of the behaviour that would follow
+from an answer and let the question fall out of it, rather than putting the
+abstract question directly. An abstract question arrives carrying your framing,
+and the Maintainer answers inside it, including when the answer they need is
+outside it. So open broadly and narrow late: leave a particular in play until a
+later round, or until running the thing makes it obvious, because settling one
+early for a tidy frontier closes an option the Maintainer would have taken once
+they had seen it work. Save the sharp explicit question for what blocks
+progress.
+
+**Surface assumptions both ways.** In the first round, list the premises you hear
+the Maintainer resting on beside your own reading of the request, side by side,
+so a mismatch shows before any question is answered.
+
+**Facts are your job.** When a frontier question needs a fact from the
+environment (filesystem, tools, etc.), dispatch a sub-agent to find it, and
+never ask the Maintainer for what you could look up. A running exploration is an
+unsettled prerequisite: only the questions downstream of it wait, so ask the
+rest of the frontier now.
+
+### Gaps
+
+The Maintainer may say they don't know. Close that gap by measuring, not by
+asking again.
+
+- **Fill it where you are confident.** State what you know, mark it
+  `confident`, and say what would confirm it. The Maintainer can check it
+  instead of taking it on trust.
+- **Offer a check where you are less sure.** A claim you cannot back becomes a
+  quick check: a read-only probe, a test in the session's scratch space, or a
+  web lookup. Ask before going online. Run the check once the Maintainer says
+  yes, and report what it showed.
+- **Hand off to a prototype** where the answer cannot be known until something
+  exists. Read `.agents/skills/prototype/SKILL.md` and follow it, then resume
+  from what the prototype showed.
+- **Keep a finding across sessions** only with agreement. Offer it in one line;
+  on a yes it goes to `.research/`, with the method that produced it.
+
+### Sort what you learn
+
+Keep four lists, each item marked **solicited** (the Maintainer said or
+confirmed it) or **unsolicited** (you inferred it):
+
+- **Objectives**, the outcomes the work must achieve.
+- **Nice-to-haves**, wanted if cheap.
+- **Unspoken wants**, what the Maintainer would expect without saying it.
+- **Unwanteds**, what must not happen.
+
+Offer an unsolicited item in one line and leave it out until the Maintainer
+confirms it.
+
+Where the project keeps a `GLOSSARY.md` or `docs/adr/`, also read
+`.agents/skills/domain-modeling/SKILL.md` and follow it, so terms and decisions
+are recorded as they settle.
+
+## Stop
+
+Stop asking when the objectives can be checked, the unwanteds are named, and
+each premise is either confirmed or paired with its proof. A question still open
+then is not a failure: name it beside its proof.
+
+Present the sorted intent for the Maintainer to accept, and offer `to-spec` in
+one line.
+
+## Realignment
+
+A build follows the spec as written. When the intent changes mid-build, stop the
+build and run this skill again with the current spec as the starting point. The
+result is a new spec baseline. The spec stays untouched while the build is in
+flight.
 
 Prefer the shape that stays easy to change. A design hardens once its premises
 have been proven, not before.
