@@ -25,9 +25,9 @@
 # Reads the hook's JSON from stdin (cwd) only when CLAUDE_PROJECT_DIR is unset.
 # The project is $CLAUDE_PROJECT_DIR, else the JSON's cwd (needs jq), else the
 # current directory, and must be a repo root, else it is skipped. Needs git.
-# KIT_SYNC_FETCH_TIMEOUT sets the fetch limit in whole seconds (default 5; any
-# other value gives the default). Takes no arguments; -h or --help prints this header, and
-# any other argument is refused without acting.
+# KIT_SYNC_FETCH_TIMEOUT sets the fetch limit in whole seconds (default 5; zero
+# or any other value gives the default). Takes no arguments; -h or --help
+# prints this header, and any other argument is refused without acting.
 #
 # Wire it up in the project's .claude/settings.json:
 #   "SessionStart": [{ "hooks": [{ "type": "command",
@@ -36,6 +36,7 @@
 FETCH_TIMEOUT=${KIT_SYNC_FETCH_TIMEOUT:-5}
 KIT=.agents
 case $FETCH_TIMEOUT in ''|*[!0-9]*) FETCH_TIMEOUT=5 ;; esac
+[ "$FETCH_TIMEOUT" -gt 0 ] || FETCH_TIMEOUT=5
 
 case "${1:-}" in
   -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
@@ -124,9 +125,10 @@ sync_kit() {
   sha=$(git -C "$KIT" rev-parse --short HEAD)
 
   pruned=$("$KIT/bin/link.sh" --prune 2>&1 | grep -v '^nothing to prune$' || true)
-  # Only a tracked link can go in the commit; an untracked one is just gone.
+  # Only a link in HEAD can go in the commit. One that is untracked, or only
+  # staged as new, is just gone; the index is the user's and stays as it is.
   for link in $(printf '%s\n' "$pruned" | awk '$1 == "x" {print $2}'); do
-    [ -n "$(git ls-files -- "$link")" ] && paths+=("$link")
+    git cat-file -e "HEAD:$link" 2>/dev/null && paths+=("$link")
   done
 
   if git add -- "${paths[@]}" >/dev/null 2>&1 &&
