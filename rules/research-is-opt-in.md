@@ -16,6 +16,8 @@ has been reviewed.
   session starts without it.
 - **Writing is the same.** Being asked to write a findings file is not being
   asked to tidy the directory around it.
+- **Agreeing to a keep offer.** During `intent`, the Maintainer agreeing to the
+  Agent's one-line offer to keep a finding counts as asking for that finding.
 
 ## Searches leave it out
 
