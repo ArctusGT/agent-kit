@@ -81,7 +81,7 @@ blocker() {
 
   [ -z "$(git -C "$KIT" status --porcelain)" ] || { echo "the kit has uncommitted changes"; return; }
   [ -z "$(git status --porcelain --ignore-submodules=dirty -- "$KIT")" ] ||
-    { echo "the project's $KIT pointer has an uncommitted change"; return; }
+    { echo "the project's $KIT pointer is not at the kit's commit, or has a staged change"; return; }
 }
 
 # Entries of link.sh --list as "<group> <name> <state>", one per line, leaving
@@ -99,7 +99,7 @@ report_new_unlinked() {
     grep -vxFf <(printf '%s\n' "$1" | awk '{print $1}') || true)
   [ -n "$new" ] || return 0
   say "new in the kit and not linked here (link with $KIT/bin/link.sh <name>):"
-  printf '%s\n' "$new" | sed 's/^/  /'
+  printf '%s\n' "$new" | sed 's/^/  /; s/:/ /'
 }
 
 # Fast-forward the kit, commit the bump, prune and report.
@@ -108,7 +108,7 @@ sync_kit() {
   before=$(kit_entries)
   git -C "$KIT" merge --ff-only --quiet origin/main >/dev/null 2>&1 || { say "fast-forward failed, kit left as it was"; return; }
   sha=$(git -C "$KIT" rev-parse --short HEAD)
-  git add -- "$KIT" && git commit --quiet -m "Bump kit to $sha" -- "$KIT" >/dev/null ||
+  git add -- "$KIT" >/dev/null 2>&1 && git commit --quiet -m "Bump kit to $sha" -- "$KIT" >/dev/null 2>&1 ||
     { say "kit moved to $sha but the bump commit failed"; return; }
   say "kit fast-forwarded to $sha, committed as \"Bump kit to $sha\""
 
