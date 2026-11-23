@@ -11,9 +11,10 @@ This skill ends with an intent the Maintainer has accepted, ready for a spec.
 The _how_ is not settled here. A question about method that a proof could
 answer goes to a probe or a prototype, not to the Maintainer.
 
-Where the request states a checkable objective and names what to avoid, and the
-weighing below finds nothing, skip the rounds and proceed as asked. Surface only
-what the weighing found.
+Skip the rounds where the request states a checkable objective and names what
+to avoid, and the weighing below finds nothing. Proceed as asked and surface
+only what the weighing found. End with one line restating the objective for the
+Maintainer to accept, and the `to-spec` offer where a spec fits.
 
 ## Weigh the method
 
@@ -53,13 +54,17 @@ Format a round like so:
 ❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
 
 ➡️ <the Agent's recommended answer>
+
+---
+
+🔍 **Checks offered**: <each quick check offered this round, or omit this line>
 ```
 
 Ask through a **scenario**. Give an example of the behaviour that would follow
 from an answer and let the question fall out of it, rather than putting the
 abstract question directly. An abstract question arrives carrying the Agent's framing,
 and the Maintainer answers inside it, including when the answer they need is
-outside it. So open broadly and narrow late: leave a particular in play until a
+outside it. So open broadly and narrow late. Leave a particular in play until a
 later round, or until running the thing makes it obvious, because settling one
 early for a tidy frontier closes an option the Maintainer would have taken once
 they had seen it work. Save the sharp explicit question for what blocks
@@ -87,7 +92,7 @@ asking again, taking the first branch that fits:
 
 - **Confident:** state what is known, mark it `confident`, and say what would
   confirm it, so the Maintainer can check it instead of taking it on trust.
-- **Less than confident:** make it a quick check, never a claim.
+- **Less than confident:** offer a quick check, never a claim.
 - **Nothing can be known until something exists:** read
   `.agents/skills/prototype/SKILL.md` and follow it, then resume from what the
   prototype showed.
