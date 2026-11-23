@@ -17,8 +17,8 @@
 #
 # After a fast-forward it runs link.sh --prune and prints what that removed,
 # and lists the kit entries that are new and not linked here, without linking
-# them. A new session sees the updated skills only if the links already
-# existed when it started; new entries need link.sh first.
+# them. Pruned links are tracked files in the project, and their removal is
+# left uncommitted: only .agents is committed.
 #
 # Reads the hook's JSON from stdin (cwd) only when CLAUDE_PROJECT_DIR is unset.
 # The project is $CLAUDE_PROJECT_DIR, else the JSON's cwd (needs jq), else the
@@ -95,8 +95,8 @@ kit_entries() {
 # before the fast-forward, $2 after.
 report_new_unlinked() {
   local new
-  new=$(printf '%s\n' "$2" | grep ' -$' | awk '{print $1}' |
-    grep -vxFf <(printf '%s\n' "$1" | awk '{print $1}') || true)
+  new=$(awk 'NR==FNR {seen[$1]; next} $2 == "-" && !($1 in seen) {print $1}' \
+    <(printf '%s\n' "$1") <(printf '%s\n' "$2"))
   [ -n "$new" ] || return 0
   say "new in the kit and not linked here (link with $KIT/bin/link.sh <name>):"
   printf '%s\n' "$new" | sed 's/^/  /; s/:/ /'
@@ -113,7 +113,7 @@ sync_kit() {
   say "kit fast-forwarded to $sha, committed as \"Bump kit to $sha\""
 
   pruned=$("$KIT/bin/link.sh" --prune 2>&1 | grep -v '^nothing to prune$' || true)
-  [ -z "$pruned" ] || { say "pruned:"; printf '%s\n' "$pruned"; }
+  [ -z "$pruned" ] || { say "pruned (tracked link removals are left uncommitted in the project):"; printf '%s\n' "$pruned"; }
 
   after=$(kit_entries)
   report_new_unlinked "$before" "$after"
