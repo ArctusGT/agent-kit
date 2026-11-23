@@ -22,9 +22,22 @@ if [ "${1:-}" = "--help" ]; then
 fi
 
 path=$(jq -r '.tool_input.file_path // empty')
-project=${CLAUDE_PROJECT_DIR:-$PWD}
+project=$(cd "${CLAUDE_PROJECT_DIR:-$PWD}" && pwd -P)
 
 [ -e "$path" ] && exit 0
+
+# The path with symlinks resolved, so /tmp and /private/tmp compare equal.
+# The file does not exist yet, so resolve its nearest existing ancestor.
+physical() {
+  local dir=$1 rest=""
+  until [ -d "$dir" ]; do
+    rest="/${dir##*/}$rest"
+    dir=$(dirname "$dir")
+  done
+  echo "$(cd "$dir" && pwd -P)$rest"
+}
+path=$(physical "$(dirname "$path")")/${path##*/}
+
 case "$path" in "$project"/*) ;; *) exit 0 ;; esac
 relative=${path#"$project"/}
 
