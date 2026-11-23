@@ -1,6 +1,6 @@
 ---
 name: improve-codebase-architecture
-description: Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.
+description: Scan a codebase for deepening opportunities, present them as a visual HTML report, then align on the intent behind whichever one you pick.
 disable-model-invocation: true
 ---
 
@@ -59,9 +59,9 @@ See [HTML-REPORT.md](HTML-REPORT.md) for the full HTML scaffold, diagram pattern
 
 Do NOT propose interfaces yet. After the file is written, ask the user: "Which of these would you like to explore?"
 
-### 3. Grilling loop
+### 3. Intent loop
 
-Once the user picks a candidate, read `.agents/skills/grilling/SKILL.md` and follow it to draw out what the deepening is for: the friction it removes and the constraints it must respect. Settle the shape of the deepened module, what sits behind the seam and what tests survive by exploring them, not by asking.
+Once the user picks a candidate, read `.agents/skills/intent/SKILL.md` and follow it to draw out what the deepening is for: the friction it removes and the constraints it must respect. Settle the shape of the deepened module, what sits behind the seam and what tests survive by exploring them, not by asking.
 
 Side effects happen inline as decisions crystallize; read `.agents/skills/domain-modeling/SKILL.md` and follow it to keep the domain model current as you go:
 
