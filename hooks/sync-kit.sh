@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Claude Code SessionStart hook. Fetches the kit's origin and, when that is
 # safe, fast-forwards the kit to origin/main. CHANGES THE PROJECT'S GIT
-# HISTORY: after a fast-forward it commits .agents, plus the tracked links that
+# HISTORY: after a fast-forward it commits .agents, plus the links in HEAD that
 # link.sh --prune removed and nothing else, as "Bump kit to <short sha>", so the
 # project's tree stays clean. The commit runs the project's own commit hooks
 # and signing, unbounded. It pushes nothing, in either repo. If the commit

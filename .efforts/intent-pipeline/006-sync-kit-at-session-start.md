@@ -2,7 +2,7 @@
 
 **Category:** enhancement
 **Summary:** A SessionStart hook fast-forwards the kit when that is safe, and otherwise reports how far behind it is
-**Status:** ready-for-agent
+**Status:** ready-for-human
 **blocked-by:** [intent-pipeline/002-prune-dangling-links]
 
 **Current behavior:**
@@ -22,7 +22,7 @@ following hold:
 
 After a fast-forward, the hook:
 - runs `link.sh --prune` and prints what it removed
-- commits `.agents` plus exactly the tracked links the prune removed, as "Bump kit to <short sha>", so the project's tree stays clean, and pushes nothing
+- commits `.agents` plus exactly the links in HEAD the prune removed, as "Bump kit to <short sha>", so the project's tree stays clean, and pushes nothing
 - lists kit entries that are new and not linked in this project, without linking them
 
 In every other case it prints one line, "kit is N behind origin/main: <reason>"
