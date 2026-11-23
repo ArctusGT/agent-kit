@@ -34,12 +34,12 @@ The hook always exits 0.
 - `link.sh --prune` (intent-pipeline/002)
 
 **Acceptance criteria:**
-- [ ] In a throwaway project and kit with origin one commit ahead, and every condition met, the hook fast-forwards, makes one commit touching only `.agents`, and pushes nothing
-- [ ] Each condition, broken on its own (worktree, project off its default branch, kit off main, dirty kit, dirty pointer, diverged), leaves both repos unchanged and prints its reason
-- [ ] A failed fetch prints one line and exits 0
-- [ ] After a fast-forward that removed a linked skill, the dangling link is pruned and reported
-- [ ] A new, unlinked kit entry is listed, not linked
-- [ ] `--help` prints what it does, what it reads, and that it commits
+- [x] In a throwaway project and kit with origin one commit ahead, and every condition met, the hook fast-forwards, makes one commit touching only `.agents`, and pushes nothing
+- [x] Each condition, broken on its own (worktree, project off its default branch, kit off main, dirty kit, dirty pointer, diverged), leaves both repos unchanged and prints its reason
+- [x] A failed fetch prints one line and exits 0
+- [x] After a fast-forward that removed a linked skill, the dangling link is pruned and reported
+- [x] A new, unlinked kit entry is listed, not linked
+- [x] `--help` prints what it does, what it reads, and that it commits
 - [ ] **Maintainer:** after a kit push, a new session in timelab shows the bump commit; report whether that same session already sees the updated skills or only the next one does
 
 **Out of scope:**
