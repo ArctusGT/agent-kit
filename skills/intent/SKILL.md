@@ -8,16 +8,16 @@ The Maintainer gives two things: a **method** (do A, B and C) and an **intent**
 a **premise**, the Maintainer's best guess at the time.
 
 This skill ends with an intent the Maintainer has accepted, ready for a spec.
-Where the request already meets the stop conditions below and no weighing turns
-anything up, proceed as asked and say nothing.
+Where the objective is already checkable, nothing to avoid is missing, and no
+weighing turns anything up, skip the rounds: proceed as asked and say nothing.
 
 ## Weigh the method
 
 Hold each part of the method against the intent:
 
 - **A cheaper route.** Something reaches D with less code, fewer moving parts or
-  a smaller blast radius. Often the thing to avoid (E, or the W the Maintainer
-  wants never to think about) is easier to remove at its source than to build
+  a smaller blast radius. Often the thing to avoid (E, or anything the
+  Maintainer wants never to think about) is easier to remove at its source than to build
   around, and the extra part the method planned for disappears with it.
 - **A conflict.** Two parts of the method work against each other, or one works
   against D.
@@ -72,21 +72,21 @@ rest of the frontier now.
 
 ### Gaps
 
-The Maintainer may say they don't know. Close that gap by measuring, not by
-asking again.
+The Maintainer may say they don't know. Close that gap yourself rather than
+asking again, taking the first branch that fits:
 
-- **Fill it where you are confident.** State what you know, mark it
-  `confident`, and say what would confirm it. The Maintainer can check it
-  instead of taking it on trust.
-- **Offer a check where you are less sure.** A claim you cannot back becomes a
-  quick check: a read-only probe, a test in the session's scratch space, or a
-  web lookup. Ask before going online. Run the check once the Maintainer says
-  yes, and report what it showed.
-- **Hand off to a prototype** where the answer cannot be known until something
-  exists. Read `.agents/skills/prototype/SKILL.md` and follow it, then resume
-  from what the prototype showed.
-- **Keep a finding across sessions** only with agreement. Offer it in one line;
-  on a yes it goes to `.research/`, with the method that produced it.
+- **Confident:** state what you know, mark it `confident`, and say what would
+  confirm it, so the Maintainer can check it instead of taking it on trust.
+- **A quick check settles it:** offer a read-only probe, a test in the
+  session's scratch space, or a web lookup. Ask before going online. Run the
+  check once the Maintainer says yes, and report what it showed.
+- **Nothing can be known until something exists:** read
+  `.agents/skills/prototype/SKILL.md` and follow it, then resume from what the
+  prototype showed.
+
+A finding worth keeping across sessions goes to `.research/` only with the
+Maintainer's agreement. Offer it in one line, and write it with the method that
+produced it.
 
 ### Sort what you learn
 
@@ -115,7 +115,6 @@ one line.
 
 ## Realignment
 
-A build follows the spec as written. When the intent changes mid-build, stop the
-build and run this skill again with the current spec as the starting point. The
-result is a new spec baseline. The spec stays untouched while the build is in
-flight.
+When the intent changes mid-build, stop the build and run this skill again with
+the current spec as the starting point. The result is a new spec baseline. The
+spec stays untouched while the build is in flight.
