@@ -2,7 +2,7 @@
 # Symlink kit entries into a project. Run from the project root.
 #
 #   .agents/bin/link.sh --list
-#   .agents/bin/link.sh tdd grilling code-review
+#   .agents/bin/link.sh tdd intent code-review
 #   .agents/bin/link.sh --all
 #   .agents/bin/link.sh --group ansible
 #   .agents/bin/link.sh --group hooks
