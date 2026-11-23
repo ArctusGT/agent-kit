@@ -21,8 +21,8 @@ following hold:
 - the kit is behind `origin/main` and can fast-forward
 
 After a fast-forward, the hook:
-- commits only the `.agents` path in the project, as "Bump kit to <short sha>", and pushes nothing
 - runs `link.sh --prune` and prints what it removed
+- commits `.agents` plus exactly the tracked links the prune removed, as "Bump kit to <short sha>", so the project's tree stays clean, and pushes nothing
 - lists kit entries that are new and not linked in this project, without linking them
 
 In every other case it prints one line, "kit is N behind origin/main: <reason>"
@@ -34,10 +34,10 @@ The hook always exits 0.
 - `link.sh --prune` (intent-pipeline/002)
 
 **Acceptance criteria:**
-- [x] In a throwaway project and kit with origin one commit ahead, and every condition met, the hook fast-forwards, makes one commit touching only `.agents`, and pushes nothing
+- [x] In a throwaway project and kit with origin one commit ahead, and every condition met, the hook fast-forwards, makes one commit touching only `.agents` and the links it pruned, and pushes nothing
 - [x] Each condition, broken on its own (worktree, project off its default branch, kit off main, dirty kit, dirty pointer, diverged), leaves both repos unchanged and prints its reason
 - [x] A failed fetch prints one line and exits 0
-- [x] After a fast-forward that removed a linked skill, the dangling link is pruned and reported
+- [x] After a fast-forward that removed a linked skill, the dangling link is pruned, reported, and removed in the bump commit
 - [x] A new, unlinked kit entry is listed, not linked
 - [x] `--help` prints what it does, what it reads, and that it commits
 - [ ] **Maintainer:** after a kit push, a new session in timelab shows the bump commit; report whether that same session already sees the updated skills or only the next one does

@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Claude Code SessionStart hook. Fetches the kit's origin and, when that is
 # safe, fast-forwards the kit to origin/main. CHANGES THE PROJECT'S GIT
-# HISTORY: after a fast-forward it commits the .agents path, and only that
-# path, as "Bump kit to <short sha>". It pushes nothing, in either repo.
+# HISTORY: after a fast-forward it commits .agents, plus the tracked links that
+# link.sh --prune removed and nothing else, as "Bump kit to <short sha>", so the
+# project's tree stays clean. The commit runs the project's own commit hooks
+# and signing, unbounded. It pushes nothing, in either repo. If the commit
+# fails it unstages its own paths and says so.
 #
 # It fast-forwards only when all of these hold; otherwise it prints one line,
 # "kit is N behind origin/main: <reason>" (or ahead, or diverged), and changes
@@ -15,15 +18,15 @@
 # Nothing is printed when the kit already matches origin/main. A failed or
 # slow fetch prints one line and stops. It always exits 0.
 #
-# After a fast-forward it runs link.sh --prune and prints what that removed,
-# and lists the kit entries that are new and not linked here, without linking
-# them. Pruned links are tracked files in the project, and their removal is
-# left uncommitted: only .agents is committed.
+# After a fast-forward it runs link.sh --prune, prints what that removed, and
+# commits those removals with the bump. It then lists the kit entries that are
+# new and not linked here, without linking them.
 #
 # Reads the hook's JSON from stdin (cwd) only when CLAUDE_PROJECT_DIR is unset.
 # The project is $CLAUDE_PROJECT_DIR, else the JSON's cwd (needs jq), else the
-# current directory. Needs git. KIT_SYNC_FETCH_TIMEOUT sets the fetch limit in
-# seconds (default 5). Takes no arguments; -h or --help prints this header, and
+# current directory, and must be a repo root, else it is skipped. Needs git.
+# KIT_SYNC_FETCH_TIMEOUT sets the fetch limit in whole seconds (default 5; any
+# other value gives the default). Takes no arguments; -h or --help prints this header, and
 # any other argument is refused without acting.
 #
 # Wire it up in the project's .claude/settings.json:
@@ -32,6 +35,7 @@
 #
 FETCH_TIMEOUT=${KIT_SYNC_FETCH_TIMEOUT:-5}
 KIT=.agents
+case $FETCH_TIMEOUT in ''|*[!0-9]*) FETCH_TIMEOUT=5 ;; esac
 
 case "${1:-}" in
   -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
@@ -81,6 +85,8 @@ blocker() {
   [ "$kit_branch" = main ] || { echo "the kit is on ${kit_branch:-a detached HEAD}, not main"; return; }
 
   [ -z "$(git -C "$KIT" status --porcelain)" ] || { echo "the kit has uncommitted changes"; return; }
+  git ls-files --stage -- "$KIT" | grep -q '^160000 ' ||
+    { echo "the project's $KIT is not a submodule"; return; }
   # The project records the kit as a gitlink. --ignore-submodules=dirty keeps
   # the kit's own working tree out of this, leaving a moved pointer or a
   # staged change.
@@ -108,18 +114,29 @@ report_new_unlinked() {
   printf '%s\n' "$new_unlinked" | sed 's/^/  /; s/:/ /'
 }
 
-# Fast-forward the kit, commit the bump, prune and report.
+# Fast-forward the kit, prune, and commit the bump with the links the prune
+# removed, then report. A failed commit unstages the paths this staged.
 sync_kit() {
-  local entries_before entries_after sha pruned
+  local entries_before entries_after sha pruned link
+  local paths=("$KIT")
   entries_before=$(kit_entries)
   git -C "$KIT" merge --ff-only --quiet origin/main >/dev/null 2>&1 || { say "fast-forward failed, kit left as it was"; return; }
   sha=$(git -C "$KIT" rev-parse --short HEAD)
-  git add -- "$KIT" >/dev/null 2>&1 && git commit --quiet -m "Bump kit to $sha" -- "$KIT" >/dev/null 2>&1 ||
-    { say "kit moved to $sha but the bump commit failed"; return; }
-  say "kit fast-forwarded to $sha, committed as \"Bump kit to $sha\""
 
   pruned=$("$KIT/bin/link.sh" --prune 2>&1 | grep -v '^nothing to prune$' || true)
-  [ -z "$pruned" ] || { say "pruned (tracked link removals are left uncommitted in the project):"; printf '%s\n' "$pruned"; }
+  # Only a tracked link can go in the commit; an untracked one is just gone.
+  for link in $(printf '%s\n' "$pruned" | awk '$1 == "x" {print $2}'); do
+    [ -n "$(git ls-files -- "$link")" ] && paths+=("$link")
+  done
+
+  if git add -- "${paths[@]}" >/dev/null 2>&1 &&
+     git commit --quiet -m "Bump kit to $sha" -- "${paths[@]}" >/dev/null 2>&1; then
+    say "kit fast-forwarded to $sha, committed as \"Bump kit to $sha\" with ${#paths[@]} path(s)"
+  else
+    git restore --staged -- "${paths[@]}" >/dev/null 2>&1
+    say "kit moved to $sha but the bump commit failed, its paths are unstaged"
+  fi
+  [ -z "$pruned" ] || { say "pruned:"; printf '%s\n' "$pruned"; }
 
   entries_after=$(kit_entries)
   report_new_unlinked "$entries_before" "$entries_after"
@@ -141,6 +158,8 @@ main() {
   PROJECT=$(pwd -P)
 
   command -v git >/dev/null || { say "needs git, skipped"; return; }
+  [ "$(git rev-parse --show-toplevel 2>/dev/null)" = "$PROJECT" ] ||
+    { say "$PROJECT is not a repo root, skipped"; return; }
   [ -e "$KIT/.git" ] || { say "no kit at $KIT, skipped"; return; }
 
   fetch_kit || { say "could not fetch the kit's origin (limit ${FETCH_TIMEOUT}s), kit left as it was"; return; }
