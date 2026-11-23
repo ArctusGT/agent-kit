@@ -25,8 +25,9 @@ After a fast-forward, the hook:
 - commits `.agents` plus exactly the links in HEAD the prune removed, as "Bump kit to <short sha>", so the project's tree stays clean, and pushes nothing
 - lists kit entries that are new and not linked in this project, without linking them
 
-In every other case it prints one line, "kit is N behind origin/main: <reason>"
-(or ahead, or diverged), and changes nothing. A failed fetch prints one line.
+When the kit already matches `origin/main` it prints nothing. In every other
+case it prints one line, "kit is N behind origin/main: <reason>" (or ahead, or
+diverged), and changes nothing. A failed fetch prints one line.
 The hook always exits 0.
 
 **Key interfaces:**
