@@ -3,7 +3,8 @@
 **`.research/` at a project root holds the Maintainer's working material:
 prototypes, findings, measurements taken before anything is decided. The Agent
 does not read, search, cite or write there unless the Maintainer asks, by name,
-in the current conversation, or agrees to a keep offer during `intent`.**
+in the current conversation, or agrees to a keep offer during `intent` for that
+finding.**
 
 The directory is gitignored. It exists in one working copy, and nothing in it
 has been reviewed.

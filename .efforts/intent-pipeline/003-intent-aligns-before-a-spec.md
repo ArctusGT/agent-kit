@@ -2,7 +2,7 @@
 
 **Category:** enhancement
 **Summary:** `intent` becomes the alignment phase, absorbing `grilling` and replacing `grill-with-docs`
-**Status:** ready-for-agent
+**Status:** ready-for-human
 **blocked-by:** [intent-pipeline/002-prune-dangling-links]
 
 **Current behavior:**
