@@ -1,6 +1,6 @@
 ---
 name: intent
-description: Align on the intent before a spec or a build. Use when the Maintainer states an intent ("the intent is", "so that", "I don't want to have to"), when the objective, what to avoid or a premise is unclear, or when asked to "grill me".
+description: Align on the intent before a spec or a build. Use when the Maintainer states an intent ("the intent is ..."), when the objective, what to avoid or a premise is unclear, or when asked to "grill me".
 ---
 
 The Maintainer gives two things: a **method** (do A, B and C) and an **intent**
@@ -25,7 +25,8 @@ Hold each part of the method against the intent:
   Name the cheapest proof that would settle it.
 
 Say what holds in the next round: the premise, why it doesn't hold, and the
-alternative or the proof.
+alternative or the proof. Prefer the shape that stays easy to change: a design
+hardens once its premises have been proven, not before.
 
 ## Rounds
 
@@ -100,9 +101,9 @@ confirmed it) or **unsolicited** (you inferred it):
 Offer an unsolicited item in one line and leave it out until the Maintainer
 confirms it.
 
-Where the project keeps a `GLOSSARY.md` or `docs/adr/`, also read
-`.agents/skills/domain-modeling/SKILL.md` and follow it, so terms and decisions
-are recorded as they settle.
+Once a term or decision settles that belongs in the glossary or an ADR, read
+`.agents/skills/domain-modeling/SKILL.md` and follow it to record it
+where it settled.
 
 ## Stop
 
@@ -119,6 +120,3 @@ A build follows the spec as written. When the intent changes mid-build, stop the
 build and run this skill again with the current spec as the starting point. The
 result is a new spec baseline. The spec stays untouched while the build is in
 flight.
-
-Prefer the shape that stays easy to change. A design hardens once its premises
-have been proven, not before.
