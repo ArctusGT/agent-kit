@@ -61,7 +61,7 @@ Do NOT propose interfaces yet. After the file is written, ask the user: "Which o
 
 ### 3. Intent loop
 
-Once the user picks a candidate, read `.agents/skills/intent/SKILL.md` and follow it to draw out what the deepening is for: the friction it removes and the constraints it must respect. Settle the shape of the deepened module, what sits behind the seam and what tests survive by exploring them, not by asking.
+Once the Maintainer picks a candidate, read `.agents/skills/intent/SKILL.md` and follow it to draw out what the deepening is for: the friction it removes and the constraints it must respect. Settle the shape of the deepened module, what sits behind the seam and what tests survive by exploring them, not by asking.
 
 Side effects happen inline as decisions crystallize; read `.agents/skills/domain-modeling/SKILL.md` and follow it to keep the domain model current as you go:
 
